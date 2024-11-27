@@ -1,0 +1,52 @@
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignore Tempo files
+monitoring-service/tempo/tempo-*
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore virtual environment directories
+.venv*
+.venv/*
+venv/
+env/
+ENV/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+*.tmp
+*.swp
+
+# Ignore data files
+*.csv
+*.json
+*.xml
+
+# Ignore output files
+*.out
+*.pdf
+
+# Ignore configuration files
+*.ini
+*.cfg
+
+# Ignore compiled files
+*.o
+*.so
+*.a
+*.dylib
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+*.iml

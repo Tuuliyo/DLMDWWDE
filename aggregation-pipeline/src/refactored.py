@@ -48,7 +48,7 @@ class SolaceSourcePartition(StatelessSourcePartition):
         messaging_service = (
             MessagingService.builder()
             .from_properties(config)
-            .with_reconnection_retry_strategy(RetryStrategy.parametrized_retry(20, 3000))
+            .with_reconnection_retry_strategy(RetryStrategy.parametrized_retry(20, 5000))
             .build()
         )
         messaging_service.connect()

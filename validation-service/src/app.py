@@ -20,7 +20,7 @@ def init_tracing():
     resource = Resource.create(attributes={
         "service.name": "validation-service"  # Replace with the name of your service
     })
-    trace.set_tracer_provider(TracerProvider(resource))
+    trace.set_tracer_provider(TracerProvider(resource=resource))
 
     # Configure the OTLP exporter to send traces to the OpenTelemetry Collector
     otlp_exporter = OTLPSpanExporter(endpoint="http://otel-collector:4317", insecure=True)

@@ -125,6 +125,8 @@ services:
       - prometheus
     volumes:
       - ./aggregation-pipeline/src:/app/src
+      - ./aggregation-pipeline/healthcheck.sh:/app/healthcheck.sh
+    command: bash /app/healthcheck.sh
     networks:
       - services-network
 
