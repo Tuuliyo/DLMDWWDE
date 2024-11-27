@@ -1,0 +1,194 @@
+version: "3.8"
+
+services:
+  pos-service:
+    build:
+      context: ./pos-service
+    deploy:
+      replicas: 5
+    depends_on:
+      - traefik
+      - validation-service
+      - message-broker
+      - grafana
+      - tempo
+      - otel-collector
+      - prometheus
+    volumes:
+      - ./pos-service/src:/app/src
+      - ./pos-service/healthcheck.sh:/app/healthcheck.sh
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: bash /app/healthcheck.sh
+    restart: no
+    networks:
+      - services-network
+
+  validation-service:
+    build:
+      context: ./validation-service
+    deploy:
+      replicas: 3
+    depends_on:
+      - message-broker
+      - grafana
+      - tempo
+      - otel-collector
+      - prometheus
+    volumes:
+      - ./validation-service/src:/app/src
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.validation-service.rule=PathPrefix(`/validation-service`)"
+      - "traefik.http.services.validation-service.loadbalancer.server.port=8000"
+    restart: always
+    networks:
+      - services-network
+
+  traefik:
+    image: traefik:v2.5
+    container_name: traefik-lb
+    depends_on:
+      - validation-service
+      - message-broker
+      - grafana
+      - tempo
+      - otel-collector
+      - prometheus
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    networks:
+      - services-network
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  message-broker:
+    image: solace/solace-pubsub-standard:latest
+    container_name: solace-pubsub-broker
+    volumes:
+      - "storage-group:/var/lib/solace"
+    shm_size: 1g
+    ulimits:
+      core: -1
+      nofile:
+        soft: 2448
+        hard: 6592
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 1
+    ports:
+      - "8008:8008"
+      - "1443:1443"
+      - "1943:1943"
+      - "1883:1883"
+      - "5671:5671"
+      - "5672:5672"
+      - "8000:8000"
+      - "8443:8443"
+      - "8883:8883"
+      - "8088:8080"
+      - "9000:9000"
+      - "9443:9443"
+      - "55554:55555"
+      - "55003:55003"
+      - "55443:55443"
+      - "2222:2222"
+    environment:
+      - username_admin_globalaccesslevel=admin
+      - username_admin_password=admin
+      - system_scaling_maxconnectioncount=100
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8088"]
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      timeout: 10s
+    networks:
+      - services-network
+
+  aggregation-pipeline:
+    build:
+      context: ./aggregation-pipeline
+    depends_on:
+      - message-broker
+      - grafana
+      - tempo
+      - otel-collector
+      - prometheus
+    volumes:
+      - ./aggregation-pipeline/src:/app/src
+    networks:
+      - services-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    ports:
+      - "4318:4318"    # OTLP gRPC
+      - "4317:4317"    # OTLP HTTP
+      - "9464:9464"    # Prometheus metrics
+      - "55681:55681"  # OTLP metrics
+    volumes:
+      - ./monitoring-service/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    command: ["--config", "/etc/otel-collector-config.yaml"]
+    depends_on:
+      - message-broker
+    networks:
+      - services-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    depends_on:
+      - otel-collector
+    volumes:
+      - ./monitoring-service/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+      - "964:9464"
+    networks:
+      - services-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - services-network
+    depends_on:
+      - prometheus
+      - otel-collector
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    depends_on:
+      - otel-collector
+      - prometheus
+      - grafana
+    ports:
+      - "14268:14268"  # HTTP receiver for traces
+      - "43172:4317"    # OTLP gRPC receiver
+      - "3200:3200"    # Tempo's HTTP API
+    volumes:
+      - ./monitoring-service/tempo/tempo-data:/var/tempo/traces  # Local storage for traces
+      - ./monitoring-service/tempo/tempo-config.yaml:/etc/tempo-config.yaml  # Custom configuration file
+    command: ["-config.file=/etc/tempo-config.yaml"]
+    networks:
+      - services-network
+
+volumes:
+  storage-group:
+
+networks:
+  services-network:
+    driver: bridge

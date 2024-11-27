@@ -1,0 +1,222 @@
+[
+    {
+        "name": "Kaffeebohnen - 250g",
+        "price": 4.99
+    },
+    {
+        "name": "Tee - 100g",
+        "price": 3.49
+    },
+    {
+        "name": "Schokolade - 100g",
+        "price": 2.99
+    },
+    {
+        "name": "Milch - 1L",
+        "price": 1.29
+    },
+    {
+        "name": "Brot - 500g",
+        "price": 1.99
+    },
+    {
+        "name": "Apfel - 1kg",
+        "price": 2.49
+    },
+    {
+        "name": "Orangen - 1kg",
+        "price": 3.59
+    },
+    {
+        "name": "Eier - 10 Stück",
+        "price": 2.99
+    },
+    {
+        "name": "Butter - 250g",
+        "price": 1.79
+    },
+    {
+        "name": "Käse - 200g",
+        "price": 2.89
+    },
+    {
+        "name": "Joghurt - 500g",
+        "price": 1.49
+    },
+    {
+        "name": "Tomaten - 1kg",
+        "price": 3.29
+    },
+    {
+        "name": "Salat - 1 Kopf",
+        "price": 1.49
+    },
+    {
+        "name": "Kartoffeln - 2kg",
+        "price": 2.99
+    },
+    {
+        "name": "Zwiebeln - 1kg",
+        "price": 1.19
+    },
+    {
+        "name": "Bananen - 1kg",
+        "price": 2.29
+    },
+    {
+        "name": "Paprika - 1kg",
+        "price": 3.49
+    },
+    {
+        "name": "Gurke - 1 Stück",
+        "price": 1.29
+    },
+    {
+        "name": "Kirschen - 500g",
+        "price": 4.49
+    },
+    {
+        "name": "Lachsfilet - 200g",
+        "price": 5.99
+    },
+    {
+        "name": "Hähnchenbrust - 300g",
+        "price": 4.79
+    },
+    {
+        "name": "Rindfleisch - 500g",
+        "price": 6.99
+    },
+    {
+        "name": "Schweinefilet - 400g",
+        "price": 5.49
+    },
+    {
+        "name": "Frikadellen - 4 Stück",
+        "price": 3.99
+    },
+    {
+        "name": "Pasta - 500g",
+        "price": 1.29
+    },
+    {
+        "name": "Reis - 1kg",
+        "price": 2.49
+    },
+    {
+        "name": "Linsen - 500g",
+        "price": 1.69
+    },
+    {
+        "name": "Mehl - 1kg",
+        "price": 0.99
+    },
+    {
+        "name": "Zucker - 1kg",
+        "price": 1.19
+    },
+    {
+        "name": "Salz - 500g",
+        "price": 0.89
+    },
+    {
+        "name": "Ketchup - 500ml",
+        "price": 1.49
+    },
+    {
+        "name": "Senf - 200ml",
+        "price": 1.29
+    },
+    {
+        "name": "Olivenöl - 500ml",
+        "price": 4.99
+    },
+    {
+        "name": "Essig - 500ml",
+        "price": 1.19
+    },
+    {
+        "name": "Sojasauce - 250ml",
+        "price": 2.19
+    },
+    {
+        "name": "Wasser - 1.5L",
+        "price": 0.79
+    },
+    {
+        "name": "Limonade - 1L",
+        "price": 1.49
+    },
+    {
+        "name": "Bier - 6 Pack",
+        "price": 5.99
+    },
+    {
+        "name": "Wein - 750ml",
+        "price": 7.99
+    },
+    {
+        "name": "Sekt - 750ml",
+        "price": 9.99
+    },
+    {
+        "name": "Eis - 500ml",
+        "price": 2.49
+    },
+    {
+        "name": "Kekse - 300g",
+        "price": 1.99
+    },
+    {
+        "name": "Gummibärchen - 200g",
+        "price": 1.49
+    },
+    {
+        "name": "Chips - 200g",
+        "price": 1.79
+    },
+    {
+        "name": "Popcorn - 100g",
+        "price": 0.99
+    },
+    {
+        "name": "Fruchtsaft - 1L",
+        "price": 2.29
+    },
+    {
+        "name": "Kaffee - 250g",
+        "price": 3.79
+    },
+    {
+        "name": "Energy Drink - 250ml",
+        "price": 1.69
+    },
+    {
+        "name": "Handschuhe - 1 Paar",
+        "price": 3.49
+    },
+    {
+        "name": "Maske - 5 Stück",
+        "price": 2.99
+    },
+    {
+        "name": "Toothpaste - 100ml",
+        "price": 1.99
+    },
+    {
+        "name": "Shampoo - 300ml",
+        "price": 2.99
+    },
+    {
+        "name": "Seife - 3 Stück",
+        "price": 2.49
+    },
+    {
+        "name": "Deodorant - 150ml",
+        "price": 2.79
+    },
+    {
+        "name": "Toilet Paper - 6 Rolls",
+        "price": 3.99
+    }
+]

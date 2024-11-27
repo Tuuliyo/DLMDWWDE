@@ -1,0 +1,49 @@
+receivers:
+  solace:
+    broker: message-broker:5672
+    max_unacknowledged: 500
+    auth:
+      sasl_plain:
+        username: otel-collector
+        password: Otel1234!
+    queue: queue://#telemetry-otel
+    tls:
+      insecure: true
+      insecure_skip_verify: true
+  otlp:
+    protocols:
+      grpc: 
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+
+exporters:
+  debug:
+    verbosity:
+  otlp:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+      insecure_skip_verify: true
+  prometheus:
+    endpoint: 0.0.0.0:9464
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp, solace]
+      processors: []
+      exporters: [debug, otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+

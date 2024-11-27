@@ -1,0 +1,9 @@
+bytewax==0.21.0
+prometheus_client==0.21.0
+solace-pubsubplus==1.9.0
+certifi==2024.8.30
+charset-normalizer==3.4.0
+idna==3.10
+requests==2.32.3
+urllib3==2.2.3
+python-dateutil==2.9.0.post0
