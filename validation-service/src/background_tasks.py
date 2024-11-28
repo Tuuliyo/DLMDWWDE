@@ -18,7 +18,6 @@ POS_TOPIC_PREFIX = "sale/pos/transaction"
 # Initialize the SolacePublisher for POS transactions
 POS_PUBLISHER = SolacePublisher(config=POS_TRANSACTION_CONFIG)
 
-
 # Get the tracer for custom spans
 tracer = trace.get_tracer(__name__)
 

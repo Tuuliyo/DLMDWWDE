@@ -40,7 +40,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp, solace]
-      processors: []
+      processors: [batch]
       exporters: [debug, otlp]
     metrics:
       receivers: [otlp]

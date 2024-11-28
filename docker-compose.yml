@@ -164,11 +164,14 @@ services:
     container_name: grafana
     ports:
       - "3000:3000"
+    volumes:
+      - ./monitoring-service/grafana/provisioning/datasources/:/etc/grafana/provisioning/datasources/
     networks:
       - services-network
     depends_on:
       - prometheus
       - otel-collector
+      - tempo
 
   tempo:
     image: grafana/tempo:latest
@@ -176,7 +179,6 @@ services:
     depends_on:
       - otel-collector
       - prometheus
-      - grafana
     ports:
       - "14268:14268"  # HTTP receiver for traces
       - "43172:4317"    # OTLP gRPC receiver

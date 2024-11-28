@@ -1,4 +1,5 @@
 import json
+import os
 from solace.messaging.messaging_service import (
     MessagingService,
     ServiceEvent,
@@ -11,8 +12,13 @@ from solace.messaging.config.retry_strategy import RetryStrategy
 from solace.messaging.config.authentication_strategy import BasicUserNamePassword
 from solace.messaging.errors.pubsubplus_client_error import PubSubPlusClientError
 from solace.messaging.publisher.direct_message_publisher import PublishFailureListener, FailedPublishEvent
+from opentelemetry import propagate, trace, baggage
+from opentelemetry.trace import StatusCode, SpanKind
+from solace_otel.messaging.trace.propagation import (
+    OutboundMessageCarrier,
+    OutboundMessageSetter
+)
 from typing import Any
-
 
 class SolacePublisher:
     def __init__(self, config: dict[str, Any]):
@@ -63,6 +69,7 @@ class SolacePublisher:
                     raise ValueError("Missing transaction_id in message content")
             except (json.JSONDecodeError, ValueError) as e:
                 print(f"Error processing message body: {e}")
+                return
 
             # Create the message with transaction_id as the message ID
             outbound_msg = (
@@ -72,10 +79,29 @@ class SolacePublisher:
                 .build(message)  # Add count to the payload for tracking
             )
 
-            # Publish the message
-            self.direct_publisher.publish(destination=topic_obj, message=outbound_msg)
-            #print(f"Message published to topic {topic_obj}")
+            # Start a new span for the publishing process
+            tracer = trace.get_tracer("SolacePublisherTracer")
+            propagator = propagate.get_global_textmap()
+            with tracer.start_as_current_span(f"{topic}_publish", kind=SpanKind.PRODUCER) as span:
+                # Set attributes for the span
+                span.set_attribute("messaging.system", "PubSub+")
+                span.set_attribute("messaging.destination_kind", "topic")
+                span.set_attribute("messaging.destination", topic)
+                span.set_attribute("messaging.protocol", "SMF")
+                span.set_attribute("messaging.operation", "publish")
 
+                # Create an OutboundMessageCarrier and inject context into it
+                carrier = OutboundMessageCarrier(outbound_msg)
+                default_setter = OutboundMessageSetter()
+                propagator.inject(carrier=carrier, setter=default_setter)
+
+                try:
+                    # Publish the message
+                    self.direct_publisher.publish(destination=topic_obj, message=outbound_msg)
+                    span.set_status(StatusCode.OK)
+                except Exception as e:
+                    print(f"Error publishing message: {e}")
+                    span.set_status(StatusCode.ERROR, str(e))
 
         except KeyboardInterrupt:
             print("Publishing interrupted by user.")

@@ -18,7 +18,7 @@ from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
 # Initialize OpenTelemetry tracing
 def init_tracing():
     resource = Resource.create(attributes={
-        "service.name": "validation-service"  # Replace with the name of your service
+        "service.name": "validation-service"
     })
     trace.set_tracer_provider(TracerProvider(resource=resource))
 
