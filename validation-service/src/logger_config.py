@@ -2,7 +2,7 @@ import os
 import logging
 
 def setup_logger():
-    logger = logging.getLogger("pos-service")
+    logger = logging.getLogger("validation-service")
     logger.setLevel(logging.ERROR)
 
     # Ensure the logs directory exists

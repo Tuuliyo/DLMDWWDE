@@ -11,10 +11,10 @@ def load_json_data(file_path):
 
 
 # Load items list and payment methods from JSON files
-items_list = load_json_data("src/examples/items.json")  # Adjust the path as needed
+items_list = load_json_data("src/examples/items.json")
 payment_methods = load_json_data(
     "src/examples/payment_methods.json"
-)  # Adjust the path as needed
+)
 
 
 # Helper function to generate random product data
@@ -50,13 +50,14 @@ def generate_transaction():
     payment_status = (
         "success" if random.random() > 0.001 else "failure"
     )  # >99% success rate
-    
+
     # Generate a random timestamp within the last 30 days
     timestamp = datetime.now() - timedelta(days=random.randint(0, 30))
 
     return {
         "transaction_id": str(uuid.uuid4()),  # Unique transaction ID
-        "timestamp": timestamp.now().isoformat() + "Z",  # ISO 8601 format with Z for UTC
+        "timestamp": timestamp.now().isoformat()
+        + "Z",  # ISO 8601 format with Z for UTC
         "store_id": f"STORE_{random.randint(1, 10)}",  # Random store ID (STORE_1 to STORE_10)
         "cashier_id": f"CASHIER_{random.randint(1, 8)}",  # Random cashier ID (CASHIER_1 to CASHIER_8)
         "items": items,

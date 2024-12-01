@@ -1,7 +1,7 @@
 import json
 import requests
-from utils import generate_transaction
 import time
+from utils import generate_transaction
 from prometheus_client import start_http_server, Counter, Histogram
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
@@ -10,6 +10,9 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from logger_config import setup_logger
+
+logger = setup_logger()
 
 # Prometheus metrics
 REQUEST_COUNT = Counter("request_count", "Number of requests sent", ["status"])
@@ -43,7 +46,7 @@ def send_1_million_messages():
 
             # Convert transaction to JSON format
             transaction_json = json.dumps(transaction)
-            print(f"Sending transaction: {transaction_json}")
+            logger.info(f"Sending transaction: {transaction_json}")
 
             # Start a new span for each transaction
             with tracer.start_as_current_span("send_transaction") as span:
@@ -63,14 +66,14 @@ def send_1_million_messages():
 
                     # Check if the request was successful
                     response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
-                    print(f"Transaction sent successfully: {transaction['transaction_id']}")
+                    logger.info(f"Transaction sent successfully: {transaction['transaction_id']}")
                     span.set_status("OK")
 
                     # Increment Prometheus counter for successful requests
                     REQUEST_COUNT.labels(status="success").inc()
                 except requests.HTTPError as e:
                     # If a 4xx or 5xx error occurs, handle it and log the error
-                    print(f"Failed to send transaction {transaction['transaction_id']}: {e}")
+                    logger.error(f"Failed to send transaction {transaction['transaction_id']}: {e}")
                     span.record_exception(e)
                     span.set_status("ERROR")
 
@@ -78,7 +81,7 @@ def send_1_million_messages():
                     REQUEST_COUNT.labels(status="http_error").inc()
                 except requests.RequestException as e:
                     # Catch other exceptions (e.g., network-related)
-                    print(f"Error during request: {e}")
+                    logger.error(f"Error during request: {e}")
                     span.record_exception(e)
                     span.set_status("ERROR")
 
@@ -91,12 +94,12 @@ def send_1_million_messages():
             # Increment counter
             count += 1
             if count % 1000 == 0:
-                print(f"Sent {count} messages")
+                logger.info(f"Sent {count} messages")
 
     except KeyboardInterrupt:
-        print("Message streaming stopped.")
+        logger.warning("Message streaming stopped.")
     finally:
-        print(f"Finished sending {count} messages")
+        logger.info(f"Finished sending {count} messages")
 
 
 if __name__ == "__main__":
