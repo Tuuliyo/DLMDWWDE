@@ -17,7 +17,6 @@ services:
     volumes:
       - ./pos-service/src:/app/src
       - ./pos-service/healthcheck.sh:/app/healthcheck.sh
-      - ./pos-service/logs:/app/logs
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
@@ -188,8 +187,8 @@ services:
       - "43172:4317"    # OTLP gRPC receiver
       - "3200:3200"    # Tempo's HTTP API
     volumes:
-      - ./monitoring-service/tempo/tempo-data:/var/tempo/traces  # Local storage for traces
-      - ./monitoring-service/tempo/tempo-config.yaml:/etc/tempo-config.yaml  # Custom configuration file
+      - ./monitoring-service/tempo/tempo-data:/var/tempo/traces
+      - ./monitoring-service/tempo/tempo-config.yaml:/etc/tempo-config.yaml
     command: ["-config.file=/etc/tempo-config.yaml"]
     networks:
       - services-network
