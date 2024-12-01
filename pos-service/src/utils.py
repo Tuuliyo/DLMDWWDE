@@ -58,7 +58,6 @@ def generate_transaction():
         "transaction_id": str(uuid.uuid4()),  # Unique transaction ID
         "timestamp": timestamp.now().isoformat() + "Z",  # ISO 8601 format with Z for UTC
         "store_id": f"STORE_{random.randint(1, 10)}",  # Random store ID (STORE_1 to STORE_10)
-        "store_id": "STORE_1",
         "cashier_id": f"CASHIER_{random.randint(1, 8)}",  # Random cashier ID (CASHIER_1 to CASHIER_8)
         "items": items,
         "total_amount": total_amount,

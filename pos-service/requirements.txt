@@ -17,6 +17,7 @@ opentelemetry-sdk==1.28.2
 opentelemetry-semantic-conventions==0.49b2
 opentelemetry-util-http==0.49b2
 packaging==24.2
+prometheus_client==0.21.0
 protobuf==5.28.3
 requests==2.32.3
 typing_extensions==4.12.2

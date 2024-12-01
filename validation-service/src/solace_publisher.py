@@ -56,7 +56,7 @@ class SolacePublisher:
         print(f"Direct Publisher ready? {direct_publisher.is_ready()}")
         return direct_publisher
 
-    def publish_message(self, topic: str, message: str):
+    def publish_message(self, topic: str, message: str, application_message_id: str):
         """Publishes messages to a topic with transaction_id as the message ID."""
         try:
             topic_obj = Topic.of(topic)
@@ -64,17 +64,17 @@ class SolacePublisher:
             # Parse the message body to extract transaction_id
             try:
                 message_content = json.loads(message)
-                transaction_id = message_content["transaction_id"]
-                if not transaction_id:
-                    raise ValueError("Missing transaction_id in message content")
+                application_message_id = message_content[application_message_id]
+                if not application_message_id:
+                    raise ValueError("Missing application_message_id in message content")
             except (json.JSONDecodeError, ValueError) as e:
                 print(f"Error processing message body: {e}")
                 return
 
-            # Create the message with transaction_id as the message ID
+            # Create the message with application_message_id as the message ID
             outbound_msg = (
                 self.message_builder
-                .with_application_message_id(transaction_id)  # Use transaction_id as message ID
+                .with_application_message_id(application_message_id)  # Use application_message_id as message ID
                 .with_property("application", "json")
                 .build(message)  # Add count to the payload for tracking
             )

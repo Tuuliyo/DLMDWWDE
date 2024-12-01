@@ -1,0 +1,15 @@
+global:
+  scrape_interval: "5s"
+
+scrape_configs:
+  - job_name: 'validation-service'
+    static_configs:
+      - targets: ['traefik:80']
+    metrics_path: /validation-service/metrics
+  - job_name: pos-service
+    static_configs:
+      - targets: ['pos-service:8000']
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+    metrics_path: /metrics

@@ -2,29 +2,39 @@ from fastapi import FastAPI, BackgroundTasks, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
-from models import Transaction, Item, Receipt
-from background_tasks import correct_transaction
-from pydantic import ValidationError
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
+from models.transaction_event import Transaction
+from models.aggregated_event import AggregatedEvent
+from routes import transaction
+from prometheus_fastapi_instrumentator import Instrumentator
 
 
 # Initialize OpenTelemetry tracing
 def init_tracing():
-    resource = Resource.create(attributes={
-        "service.name": "validation-service"
-    })
+    resource = Resource.create(
+        attributes={
+            "service.name": "validation-service"  # Set the service name for tracing
+        }
+    )
     trace.set_tracer_provider(TracerProvider(resource=resource))
 
     # Configure the OTLP exporter to send traces to the OpenTelemetry Collector
-    otlp_exporter = OTLPSpanExporter(endpoint="http://otel-collector:4317", insecure=True)
-    span_processor = SimpleSpanProcessor(otlp_exporter)
+    otlp_exporter = OTLPSpanExporter(
+        endpoint="http://otel-collector:4317", insecure=True
+    )
+    span_processor = BatchSpanProcessor(
+        otlp_exporter,
+        max_queue_size=1000,
+        max_export_batch_size=500,
+        schedule_delay_millis=5000,
+    )
     trace.get_tracer_provider().add_span_processor(span_processor)
 
     # Automatically instrument requests
@@ -45,21 +55,22 @@ app = FastAPI(
 # Add OpenTelemetry middleware
 init_tracing()
 FastAPIInstrumentor.instrument_app(app)
+instrumentor = Instrumentator().instrument(app)
 app.add_middleware(OpenTelemetryMiddleware)
 
+app.include_router(transaction.router)
 
-# TODO: Add additional endpoints for the aggregated data from flink
-# TODO: Add Models for aggregated data
-# TODO: Add Router in FastAPI for better organization
+@app.on_event("startup")
+async def startup_event():
+    print("Validation Service started")
+    instrumentor.expose(app)
 
 
 # Custom error handler for validation errors
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    # Custom error message
     error_messages = []
     for error in exc.errors():
-        # Customize the error message based on the field and the error type
         field = error.get("loc")[-1]  # Get the field name
         msg = error.get("msg")  # Get the error message
         error_messages.append(f"Field '{field}' validation failed: {msg}")
@@ -77,29 +88,54 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-@app.post("/api/v1/pos/validate_transaction")
-async def validate_transaction(
-    transaction: Transaction, background_tasks: BackgroundTasks
-):
-    # Add the background task for more complex validation/corrections
-    background_tasks.add_task(correct_transaction, transaction)
+# @app.post("/api/v1/pos/validate_transaction")
+# async def validate_transaction(
+#     transaction: Transaction, background_tasks: BackgroundTasks
+# ):
+#     tracer = trace.get_tracer(__name__)  # Get tracer for custom spans
 
-    # If basic validation passes, return a success message
-    return {
-        "status": "success",
-        "transaction_id": transaction.transaction_id,
-        "message": "transaction accepted",
-    }
+#     with tracer.start_as_current_span("validate_transaction") as span:
+#         span.set_attribute("transaction.id", str(transaction.transaction_id))
+#         span.set_attribute("transaction.store_id", transaction.store_id)
+
+#         try:
+#             # Add the background task for more complex validation/corrections
+#             background_tasks.add_task(correct_transaction, transaction)
+#             return {
+#                 "status": "success",
+#                 "transaction_id": transaction.transaction_id,
+#                 "message": "transaction accepted",
+#             }
+#         except Exception as e:
+#             span.record_exception(e)
+#             span.set_status("ERROR")
+#             raise e
 
 
 @app.post("/api/v1/pos/amount-per-store")
-async def amount_per_store(request: Request):
+async def amount_per_store(
+    aggregated_event: AggregatedEvent, background_tasks: BackgroundTasks
+):
     """
     Endpoint to receive aggregated data from Flink job.
     """
-    body = await request.body()
-    print(f"Received aggregated data: {body.decode()}")
-    return {"status": "success", "message": "Aggregated data received successfully."}
+    tracer = trace.get_tracer(__name__)
+
+    with tracer.start_as_current_span("amount_per_store") as span:
+        span.set_attribute("event.id", str(aggregated_event.event_id))
+        span.set_attribute("event.store_id", aggregated_event.store_id)
+
+        try:
+            print(f"Received aggregated data: {aggregated_event}")
+            background_tasks.add_task(send_aggregations, aggregated_event)
+            return {
+                "status": "success",
+                "message": "Aggregated data received successfully.",
+            }
+        except Exception as e:
+            span.record_exception(e)
+            span.set_status("ERROR")
+            raise e
 
 
 @app.get("/api/v1/health", status_code=200)

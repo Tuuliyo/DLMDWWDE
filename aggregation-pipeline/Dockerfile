@@ -10,4 +10,4 @@ RUN apt-get update && apt-get install -y curl
 
 COPY src/ /app/src/
 
-CMD ["python", "-m", "bytewax.run", "src/refactored.py"]
+CMD ["python", "-m", "bytewax.run", "src/main.py"]

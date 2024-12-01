@@ -34,4 +34,4 @@ while :; do
 done
 
 echo "Starting Aggregation service..."
-exec python -m bytewax.run -w3 src/refactored.py
+exec python -m bytewax.run -w3 src/main.py

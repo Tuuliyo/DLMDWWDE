@@ -2,13 +2,18 @@ import json
 import requests
 from utils import generate_transaction
 import time
+from prometheus_client import start_http_server, Counter, Histogram
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+# Prometheus metrics
+REQUEST_COUNT = Counter("request_count", "Number of requests sent", ["status"])
+REQUEST_LATENCY = Histogram("request_latency_seconds", "Latency of requests in seconds")
 
 # Initialize OpenTelemetry tracing
 def init_tracing():
@@ -20,7 +25,7 @@ def init_tracing():
 
     # Configure the OTLP exporter to send traces to the OpenTelemetry Collector
     otlp_exporter = OTLPSpanExporter(endpoint="http://otel-collector:4317", insecure=True)
-    span_processor = SimpleSpanProcessor(otlp_exporter)
+    span_processor = BatchSpanProcessor(otlp_exporter, max_queue_size=1000, max_export_batch_size=500, schedule_delay_millis=5000)
     trace.get_tracer_provider().add_span_processor(span_processor)
 
     # Automatically instrument requests library
@@ -47,6 +52,7 @@ def send_1_million_messages():
                 span.set_attribute("transaction.store_id", transaction["store_id"])
                 span.set_attribute("transaction.total_amount", transaction["total_amount"])
 
+                start_time = time.time()  # Start latency timer
                 try:
                     # Send the request
                     response = requests.post(
@@ -59,16 +65,28 @@ def send_1_million_messages():
                     response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
                     print(f"Transaction sent successfully: {transaction['transaction_id']}")
                     span.set_status("OK")
+
+                    # Increment Prometheus counter for successful requests
+                    REQUEST_COUNT.labels(status="success").inc()
                 except requests.HTTPError as e:
                     # If a 4xx or 5xx error occurs, handle it and log the error
                     print(f"Failed to send transaction {transaction['transaction_id']}: {e}")
                     span.record_exception(e)
                     span.set_status("ERROR")
+
+                    # Increment Prometheus counter for failed requests
+                    REQUEST_COUNT.labels(status="http_error").inc()
                 except requests.RequestException as e:
                     # Catch other exceptions (e.g., network-related)
                     print(f"Error during request: {e}")
                     span.record_exception(e)
                     span.set_status("ERROR")
+
+                    # Increment Prometheus counter for failed requests
+                    REQUEST_COUNT.labels(status="request_error").inc()
+                finally:
+                    latency = time.time() - start_time  # Calculate latency
+                    REQUEST_LATENCY.observe(latency)  # Record latency in Prometheus
 
             # Increment counter
             count += 1
@@ -82,5 +100,9 @@ def send_1_million_messages():
 
 
 if __name__ == "__main__":
+    # Start Prometheus metrics server
+    start_http_server(8000)
+
+    # Initialize tracing and start sending messages
     init_tracing()
     send_1_million_messages()
