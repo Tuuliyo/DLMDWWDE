@@ -11,8 +11,8 @@ logger = setup_logger()
 POS_TRANSACTION_CONFIG = {
     "solace.messaging.transport.host": "tcp://message-broker:55555",
     "solace.messaging.service.vpn-name": "default",
-    "solace.messaging.authentication.scheme.basic.username": "testuser",
-    "solace.messaging.authentication.scheme.basic.password": "Test1234!",
+    "solace.messaging.authentication.scheme.basic.username": "sale_pos_transaction_validation",
+    "solace.messaging.authentication.scheme.basic.password": "Validation1234!",
 }
 # Setup topic root for POS transactions
 POS_TOPIC_PREFIX = "sale/pos/transaction"

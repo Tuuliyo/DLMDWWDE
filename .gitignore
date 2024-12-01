@@ -16,6 +16,37 @@ venv/
 env/
 ENV/
 
+# Local Terraform directories
+.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
+
+# Override files (used for local modifications)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+
+# Terraform lock files
+.terraform.lock.hcl
+
+# Configuration files used by Terraform providers
+.terraformrc
+terraform.rc
+
+
 # Ignore system files
 .DS_Store
 Thumbs.db

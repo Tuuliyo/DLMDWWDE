@@ -1,77 +1,6 @@
 version: "3.8"
 
 services:
-  pos-service:
-    build:
-      context: ./pos-service
-    deploy:
-      replicas: 5
-    depends_on:
-      - traefik
-      - validation-service
-      - message-broker
-      - grafana
-      - tempo
-      - otel-collector
-      - prometheus
-    volumes:
-      - ./pos-service/src:/app/src
-      - ./pos-service/healthcheck.sh:/app/healthcheck.sh
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: bash /app/healthcheck.sh
-    restart: no
-    networks:
-      - services-network
-
-  validation-service:
-    build:
-      context: ./validation-service
-    deploy:
-      replicas: 3
-    depends_on:
-      - message-broker
-      - grafana
-      - tempo
-      - otel-collector
-      - prometheus
-    volumes:
-      - ./validation-service/src:/app/src
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.validation-service.rule=PathPrefix(`/validation-service`)"
-      - "traefik.http.services.validation-service.loadbalancer.server.port=8000"
-    restart: always
-    networks:
-      - services-network
-
-  traefik:
-    image: traefik:v2.5
-    container_name: traefik-lb
-    depends_on:
-      - validation-service
-      - message-broker
-      - grafana
-      - tempo
-      - otel-collector
-      - prometheus
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
-    labels:
-      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-    ports:
-      - "80:80"
-      - "8080:8080"
-    networks:
-      - services-network
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-
   message-broker:
     image: solace/solace-pubsub-standard:latest
     container_name: solace-pubsub-broker
@@ -109,23 +38,90 @@ services:
       - username_admin_password=admin
       - system_scaling_maxconnectioncount=100
     healthcheck:
-      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8088"]
-      interval: 30s
-      retries: 5
-      start_period: 20s
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8080/health-check/"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
       timeout: 10s
     networks:
       - services-network
+
+  terraform:
+    image: hashicorp/terraform:latest
+    container_name: terraform
+    volumes:
+      - ./broker-setup/solace:/workspace
+      - ./broker-setup/scripts/setup.sh:/workspace/setup.sh
+    working_dir: /workspace
+    entrypoint: ["sh", "/workspace/setup.sh"]
+    networks:
+      - services-network
+
+  pos-service:
+    build:
+      context: ./pos-service
+    deploy:
+      replicas: 5
+    depends_on:
+      terraform:
+        condition: service_completed_successfully
+    volumes:
+      - ./pos-service/src:/app/src
+      - ./pos-service/healthcheck.sh:/app/healthcheck.sh
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: bash /app/healthcheck.sh
+    restart: no
+    networks:
+      - services-network
+
+  validation-service:
+    build:
+      context: ./validation-service
+    deploy:
+      replicas: 3
+    depends_on:
+      terraform:
+        condition: service_completed_successfully
+    volumes:
+      - ./validation-service/src:/app/src
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.validation-service.rule=PathPrefix(`/validation-service`)"
+      - "traefik.http.services.validation-service.loadbalancer.server.port=8000"
+    restart: always
+    networks:
+      - services-network
+
+  traefik:
+    image: traefik:v2.5
+    container_name: traefik-lb
+    depends_on:
+      terraform:
+        condition: service_completed_successfully
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
+    labels:
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    networks:
+      - services-network
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
 
   aggregation-pipeline:
     build:
       context: ./aggregation-pipeline
     depends_on:
-      - message-broker
-      - grafana
-      - tempo
-      - otel-collector
-      - prometheus
+      terraform:
+        condition: service_completed_successfully
     volumes:
       - ./aggregation-pipeline/src:/app/src
       - ./aggregation-pipeline/healthcheck.sh:/app/healthcheck.sh
@@ -145,7 +141,8 @@ services:
       - ./monitoring-service/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     command: ["--config", "/etc/otel-collector-config.yaml"]
     depends_on:
-      - message-broker
+      terraform:
+        condition: service_completed_successfully
     networks:
       - services-network
 
@@ -184,7 +181,7 @@ services:
       - prometheus
     ports:
       - "14268:14268"  # HTTP receiver for traces
-      - "43172:4317"    # OTLP gRPC receiver
+      - "43172:4317"   # OTLP gRPC receiver
       - "3200:3200"    # Tempo's HTTP API
     volumes:
       - ./monitoring-service/tempo/tempo-data:/var/tempo/traces

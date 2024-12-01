@@ -24,10 +24,10 @@ tracer = trace.get_tracer(__name__)
 POS_TRANSACTION_CONFIG = {
     "solace.messaging.transport.host": "tcp://message-broker:55555",
     "solace.messaging.service.vpn-name": "default",
-    "solace.messaging.authentication.scheme.basic.username": "testuser",
-    "solace.messaging.authentication.scheme.basic.password": "Test1234!",
+    "solace.messaging.authentication.scheme.basic.username": "sale_pos_transaction_aggregation",
+    "solace.messaging.authentication.scheme.basic.password": "Aggregation1234!",
 }
-POS_QUEUE_NAME = "sale.pos.transaction.aggregation.service"
+POS_QUEUE_NAME = "sale_pos_transaction_aggregation_service"
 
 
 class SolaceSourcePartition(StatelessSourcePartition):
