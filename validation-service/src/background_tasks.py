@@ -2,6 +2,10 @@ from opentelemetry import trace
 from models.transaction_event import Transaction
 from models.aggregated_event import AggregatedEvent
 from solace_publisher import SolacePublisher
+from logger_config import setup_logger
+
+# Initialize logger
+logger = setup_logger()
 
 # Configuration for the SolacePublisher to publish POS transactions
 POS_TRANSACTION_CONFIG = {
@@ -21,29 +25,25 @@ async def correct_transaction(transaction: Transaction):
     """
     Simulate more complex transaction corrections with OpenTelemetry tracing.
     """
-    # Get the tracer for custom spans
     tracer = trace.get_tracer(__name__)
     with tracer.start_as_current_span("correct_transaction") as span:
-        # Add attributes to the span
         span.set_attribute("transaction.id", str(transaction.transaction_id))
         span.set_attribute("transaction.store_id", transaction.store_id)
         span.set_attribute("transaction.total_amount", transaction.total_amount)
 
-        # Check if the calculated total matches the total_amount
         calculated_total = sum(item.total_price for item in transaction.items)
         if calculated_total != transaction.total_amount:
             transaction.total_amount = round(calculated_total, 2)
             span.set_attribute("transaction.corrected_total", transaction.total_amount)
-            # print(
-            #    f"Total amount corrected for transaction {transaction.transaction_id}: {transaction.total_amount}"
-            # )
+            logger.info(
+                f"Corrected total for transaction {transaction.transaction_id}: {transaction.total_amount}"
+            )
 
-        # Payment status validation
         if transaction.payment_status != "success":
             span.set_attribute("transaction.payment_status", "failed")
-            # print(
-            #    f"Transaction {transaction.transaction_id} has failed payment validation!"
-            # )
+            logger.warning(
+                f"Transaction {transaction.transaction_id} failed payment validation."
+            )
         else:
             span.set_attribute("transaction.payment_status", "success")
             topic = (
@@ -53,13 +53,12 @@ async def correct_transaction(transaction: Transaction):
             )
             message = transaction.model_dump_json()
 
-            # Create a span for Solace publishing
             with tracer.start_as_current_span("publish_to_solace") as publish_span:
                 publish_span.set_attribute("solace.topic", topic)
                 POS_PUBLISHER.publish_message(topic, message, "transaction_id")
-                # print(
-                #    f"Transaction {transaction.transaction_id} published to topic {topic}"
-                # )
+                logger.info(
+                    f"Transaction {transaction.transaction_id} published to topic {topic}."
+                )
 
 
 async def send_aggregations(aggregation_per_store: AggregatedEvent):
@@ -70,13 +69,13 @@ async def send_aggregations(aggregation_per_store: AggregatedEvent):
     with tracer.start_as_current_span("received_aggregated_event") as received_span:
         received_span.set_attribute("event.id", str(aggregation_per_store.event_id))
         received_span.set_attribute("event.store_id", aggregation_per_store.store_id)
-        
+
         topic = f"{POS_TOPIC_PREFIX}/aggregations/{aggregation_per_store.store_id}/{aggregation_per_store.event_id}/{aggregation_per_store.total_amount}"
         message = aggregation_per_store.model_dump_json()
-        
+
         with tracer.start_as_current_span("publish_to_solace") as publish_span:
             publish_span.set_attribute("solace.topic", topic)
             POS_PUBLISHER.publish_message(topic, message, "event_id")
-            print(
-                f"Transaction {aggregation_per_store.event_id} published to topic {topic}"
+            logger.info(
+                f"Aggregated event {aggregation_per_store.event_id} published to topic {topic}."
             )

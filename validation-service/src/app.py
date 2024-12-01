@@ -1,4 +1,4 @@
-from fastapi import FastAPI, BackgroundTasks, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
@@ -10,11 +10,12 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
-from models.transaction_event import Transaction
-from models.aggregated_event import AggregatedEvent
-from routes import transaction
+from routes import transaction, health, amount_per_store
 from prometheus_fastapi_instrumentator import Instrumentator
+from logger_config import setup_logger
 
+# Initialize logger
+logger = setup_logger()
 
 # Initialize OpenTelemetry tracing
 def init_tracing():
@@ -43,8 +44,8 @@ def init_tracing():
 
 # Initialize FastAPI application
 app = FastAPI(
-    title="POS Validation Service",
-    description="Service to validate POS transactions",
+    title="Validation Service",
+    description="Service to validate events send to message broker",
     version="1.0",
     openapi_url="/api/v1/pos/openapi.json",
     docs_url="/api/v1/pos/docs",
@@ -59,12 +60,13 @@ instrumentor = Instrumentator().instrument(app)
 app.add_middleware(OpenTelemetryMiddleware)
 
 app.include_router(transaction.router)
+app.include_router(health.router)
+app.include_router(amount_per_store.router)
 
 @app.on_event("startup")
 async def startup_event():
     print("Validation Service started")
     instrumentor.expose(app)
-
 
 # Custom error handler for validation errors
 @app.exception_handler(RequestValidationError)
@@ -86,61 +88,3 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             }
         ),
     )
-
-
-# @app.post("/api/v1/pos/validate_transaction")
-# async def validate_transaction(
-#     transaction: Transaction, background_tasks: BackgroundTasks
-# ):
-#     tracer = trace.get_tracer(__name__)  # Get tracer for custom spans
-
-#     with tracer.start_as_current_span("validate_transaction") as span:
-#         span.set_attribute("transaction.id", str(transaction.transaction_id))
-#         span.set_attribute("transaction.store_id", transaction.store_id)
-
-#         try:
-#             # Add the background task for more complex validation/corrections
-#             background_tasks.add_task(correct_transaction, transaction)
-#             return {
-#                 "status": "success",
-#                 "transaction_id": transaction.transaction_id,
-#                 "message": "transaction accepted",
-#             }
-#         except Exception as e:
-#             span.record_exception(e)
-#             span.set_status("ERROR")
-#             raise e
-
-
-@app.post("/api/v1/pos/amount-per-store")
-async def amount_per_store(
-    aggregated_event: AggregatedEvent, background_tasks: BackgroundTasks
-):
-    """
-    Endpoint to receive aggregated data from Flink job.
-    """
-    tracer = trace.get_tracer(__name__)
-
-    with tracer.start_as_current_span("amount_per_store") as span:
-        span.set_attribute("event.id", str(aggregated_event.event_id))
-        span.set_attribute("event.store_id", aggregated_event.store_id)
-
-        try:
-            print(f"Received aggregated data: {aggregated_event}")
-            background_tasks.add_task(send_aggregations, aggregated_event)
-            return {
-                "status": "success",
-                "message": "Aggregated data received successfully.",
-            }
-        except Exception as e:
-            span.record_exception(e)
-            span.set_status("ERROR")
-            raise e
-
-
-@app.get("/api/v1/health", status_code=200)
-async def health_check():
-    """
-    Health check endpoint to verify the application is running.
-    """
-    return {"status": "ok", "message": "The application is healthy and running."}

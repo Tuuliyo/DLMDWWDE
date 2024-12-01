@@ -17,6 +17,7 @@ services:
     volumes:
       - ./pos-service/src:/app/src
       - ./pos-service/healthcheck.sh:/app/healthcheck.sh
+      - ./pos-service/logs:/app/logs
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
