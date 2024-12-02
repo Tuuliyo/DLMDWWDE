@@ -48,10 +48,10 @@ valid_events = op.filter(
     "valid_events", deserialized_events, lambda event: event is not None
 )
 keyed_events = op.key_on("key_by_store", valid_events, lambda x: x["store_id"])
-align_to_start = datetime(2024, 11, 15, 15, 40, 40, tzinfo=timezone.utc)
+align_to_start = datetime(2024, 11, 15, 0, 0, 0, tzinfo=timezone.utc)
 clock = EventClock(
     lambda e: extract_timestamp(e["timestamp"]),
-    wait_for_system_duration=timedelta(seconds=1),
+    wait_for_system_duration=timedelta(seconds=0.1),
 )
 windower = TumblingWindower(length=timedelta(seconds=10), align_to=align_to_start)
 aggregated_events = windowing.fold_window(

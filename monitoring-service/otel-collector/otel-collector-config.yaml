@@ -4,8 +4,8 @@ receivers:
     max_unacknowledged: 500
     auth:
       sasl_plain:
-        username: otel-collector
-        password: Otel1234!
+        username: telemetry_collector_service
+        password: Telemetry1234!
     queue: queue://#telemetry-otel
     tls:
       insecure: true

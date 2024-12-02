@@ -73,9 +73,7 @@ class SolaceSourcePartition(StatelessSourcePartition):
 
     def next_batch(self):
         try:
-            message = self.receiver.receive_message(
-                timeout=1
-            )  # Set an appropriate timeout
+            message = self.receiver.receive_message(timeout=1)
             if message:
                 PROPAGATOR = propagate.get_global_textmap()
                 carrier = InboundMessageCarrier(message)
