@@ -129,6 +129,29 @@ services:
     networks:
       - services-network
 
+  solace-prometheus-exporter:
+    image: solacecommunity/solace-prometheus-exporter:latest
+    container_name: solace-prometheus-exporter
+    platform: linux/amd64
+    volumes:
+      - ./message-broker-metrics/file.ini:/config/file.ini
+    environment:
+      - SOLACE_LISTEN_ADDR=0.0.0.0:9628
+      - SOLACE_SCRAPE_URI=http://message-broker:8080
+      - SOLACE_USERNAME=admin
+      - SOLACE_PASSWORD=admin
+      - SOLACE_TIMEOUT=5s
+      - SOLACE_SSL_VERIFY=false
+      - SOLACE_LISTEN_TLS=false
+      - SOLACE_DEFAULT_VPN=default
+    ports:
+      - "9628:9628"  # Port for Prometheus to scrape metrics
+    depends_on:
+      terraform:
+        condition: service_completed_successfully
+    networks:
+      - services-network
+  
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: otel-collector
