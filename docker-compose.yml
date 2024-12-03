@@ -133,8 +133,6 @@ services:
     image: solacecommunity/solace-prometheus-exporter:latest
     container_name: solace-prometheus-exporter
     platform: linux/amd64
-    volumes:
-      - ./message-broker-metrics/file.ini:/config/file.ini
     environment:
       - SOLACE_LISTEN_ADDR=0.0.0.0:9628
       - SOLACE_SCRAPE_URI=http://message-broker:8080
