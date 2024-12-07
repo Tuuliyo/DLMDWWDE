@@ -74,7 +74,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     command: bash /app/healthcheck.sh
-    restart: no
+    restart: "no"
     networks:
       - services-network
 
