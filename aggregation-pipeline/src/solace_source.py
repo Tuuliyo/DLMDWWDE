@@ -16,14 +16,15 @@ from bytewax.inputs import DynamicSource, StatelessSourcePartition
 from opentelemetry import propagate, context, trace
 from opentelemetry.trace import StatusCode, SpanKind
 from logger_config import setup_logger
+import os
 
 logger = setup_logger()
 tracer = trace.get_tracer(__name__)
 
 
 POS_TRANSACTION_CONFIG = {
-    "solace.messaging.transport.host": "tcp://message-broker:55555",
-    "solace.messaging.service.vpn-name": "default",
+    "solace.messaging.transport.host": f"{os.getenv('BROKER_MSG_PROTOCOL')}://{os.getenv('BROKER_HOST')}:{os.getenv('BROKER_MSG_PORT')}",
+    "solace.messaging.service.vpn-name": os.getenv("BROKER_MSG_VPN", "default"),
     "solace.messaging.authentication.scheme.basic.username": "sale_pos_transaction_aggregation",
     "solace.messaging.authentication.scheme.basic.password": "Aggregation1234!",
 }

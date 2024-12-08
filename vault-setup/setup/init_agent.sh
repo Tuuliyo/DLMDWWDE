@@ -4,7 +4,7 @@
 VAULT_DATA_DIR="./vault/data"
 VAULT_ADDR="http://127.0.0.1:8200"
 SHARED_DIR="/etc/vault-agent/shared"
-SERVICES="pos-service"
+SERVICES="pos-service validation-service aggregation-service"
 
 # Export VAULT_ADDR globally
 export VAULT_ADDR="$VAULT_ADDR"
@@ -48,7 +48,7 @@ vault secrets enable -path=kv kv || echo "KV engine already enabled."
 
 # Loop through each service to set up policies and roles
 for SERVICE in $SERVICES; do
-  SERVICE_DIR="/vault/${SERVICE}"
+  SERVICE_DIR="/vault/services/${SERVICE}"
   POLICY_FILE="${SERVICE_DIR}/policies/${SERVICE}-policy.hcl"
   ROLE_NAME="${SERVICE}-role"
   ROLE_ID_FILE="$SHARED_DIR/${SERVICE}-role_id"
@@ -76,9 +76,10 @@ for SERVICE in $SERVICES; do
 
   # Save Role ID and Secret ID
   echo "Saving Role ID and Secret ID for ${SERVICE}..."
-  echo "$ROLE_ID" > $ROLE_ID_FILE
-  echo "$SECRET_ID" > $SECRET_ID_FILE
-  chmod 600 $ROLE_ID_FILE $SECRET_ID_FILE
+  echo "$ROLE_ID" > "$ROLE_ID_FILE"
+  echo "$SECRET_ID" > "$SECRET_ID_FILE"
+
+  chmod 600 "$ROLE_ID_FILE" "$SECRET_ID_FILE"
 
   # Run service-specific script to populate secrets
   if [ -f "$SECRETS_SCRIPT" ]; then
@@ -94,7 +95,7 @@ done
 # Start Vault Agent for each service
 for SERVICE in $SERVICES; do
   echo "Starting Vault Agent for ${SERVICE}..."
-  nohup vault agent -config="/vault/${SERVICE}/${SERVICE}.hcl" > "agent-${SERVICE}.log" 2>&1 &
+  nohup vault agent -config="/vault/services/${SERVICE}/${SERVICE}.hcl" > "agent-${SERVICE}.log" 2>&1 &
   echo "Vault Agent for ${SERVICE} started."
 done
 

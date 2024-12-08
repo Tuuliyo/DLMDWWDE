@@ -3,17 +3,19 @@ from models.transaction_event import Transaction
 from models.aggregated_event import AggregatedEvent
 from solace_publisher import SolacePublisher
 from logger_config import setup_logger
+import os
 
 # Initialize logger
 logger = setup_logger()
 
 # Configuration for the SolacePublisher to publish POS transactions
 POS_TRANSACTION_CONFIG = {
-    "solace.messaging.transport.host": "tcp://message-broker:55555",
-    "solace.messaging.service.vpn-name": "default",
+    "solace.messaging.transport.host": f"{os.getenv('BROKER_PROTOCOL')}://{os.getenv('BROKER_HOST')}:{os.getenv('BROKER_PORT')}",
+    "solace.messaging.service.vpn-name": os.getenv("BROKER_MSG_VPN", "default"),
     "solace.messaging.authentication.scheme.basic.username": "sale_pos_transaction_validation",
     "solace.messaging.authentication.scheme.basic.password": "Validation1234!",
 }
+
 # Setup topic root for POS transactions
 POS_TOPIC_PREFIX = "sale/pos/transaction"
 

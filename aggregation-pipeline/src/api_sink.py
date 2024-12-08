@@ -3,6 +3,7 @@ from opentelemetry import trace
 from bytewax.outputs import DynamicSink, StatelessSinkPartition
 from logger_config import setup_logger
 from utils import send_to_api
+import os
 
 logger = setup_logger()
 tracer = trace.get_tracer(__name__)
@@ -19,7 +20,7 @@ class ApiSinkPartition(StatelessSinkPartition):
                     send_span.set_attribute("http.method", "POST")
                     send_span.set_attribute(
                         "http.url",
-                        "http://traefik/validation-service/api/v1/pos/amount-per-store",
+                        f"{os.getenv('API_PROTOCOL')}://{os.getenv('API_HOST')}:{os.getenv('API_PORT')}/validation-service/api/v1/pos/amount-per-store",
                     )
                     send_span.set_attribute("event.id", item["event_id"])
                     send_span.set_attribute("store.id", item["store_id"])

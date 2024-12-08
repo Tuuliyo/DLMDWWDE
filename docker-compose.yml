@@ -70,13 +70,12 @@ services:
     volumes:
       - ./pos-service/src:/app/src
       - ./pos-service/healthcheck.sh:/app/healthcheck.sh
-      - ./vault-setup/pos-service/env:/vault-secrets:ro      
+      - ./vault-setup/services/pos-service/env/.env:/vault-secrets/.env:ro      
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
     environment:
       - PYTHONUNBUFFERED=1
-      - VAULT_ADDR=http://vault:8200
       - ENV_FILE_PATH=/vault-secrets/.env
     command: bash /app/healthcheck.sh
     restart: "no"
@@ -93,10 +92,15 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./validation-service/src:/app/src
+      - ./validation-service/healthcheck.sh:/app/healthcheck.sh
+      - ./vault-setup/services/validation-service/env/.env:/vault-secrets/.env:ro 
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.validation-service.rule=PathPrefix(`/validation-service`)"
       - "traefik.http.services.validation-service.loadbalancer.server.port=8000"
+    environment:
+      - ENV_FILE_PATH=/vault-secrets/.env
+    command: bash /app/healthcheck.sh
     restart: always
     networks:
       - services-network
@@ -130,6 +134,9 @@ services:
     volumes:
       - ./aggregation-pipeline/src:/app/src
       - ./aggregation-pipeline/healthcheck.sh:/app/healthcheck.sh
+      - ./vault-setup/services/aggregation-service/env/.env:/vault-secrets/.env:ro
+    environment:
+      - ENV_FILE_PATH=/vault-secrets/.env
     command: bash /app/healthcheck.sh
     networks:
       - services-network
@@ -225,7 +232,7 @@ services:
       - ./vault-setup/config:/vault/config
       - ./vault-setup/data:/vault/data
       - ./vault-setup/setup:/vault/setup
-      - ./vault-setup/pos-service:/vault/pos-service
+      - ./vault-setup/services:/vault/services
     environment:
       - VAULT_ADDR=http://0.0.0.0:8200
       - VAULT_API_ADDR=http://0.0.0.0:8200

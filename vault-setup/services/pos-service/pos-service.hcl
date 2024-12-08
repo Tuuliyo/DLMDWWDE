@@ -8,14 +8,14 @@ auto_auth {
 
     sink "file" {
         config = {
-            path = "/vault/pos-service/env/.env"
+            path = "/vault/services/pos-service/env/.env"
         }
     }
 }
 
 template {
-    source      = "/vault/pos-service/templates/pos-service-template.tpl"
-    destination = "/vault/pos-service/env/.env"
+    source      = "/vault/services/pos-service/templates/pos-service-template.tpl"
+    destination = "/vault/services/pos-service/env/.env"
 }
 
 vault {
