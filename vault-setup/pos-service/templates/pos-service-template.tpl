@@ -1,0 +1,6 @@
+API_HOST="{{ with secret "kv/pos-service" }}{{ .Data.api_host }}{{ end }}"
+API_PORT="{{ with secret "kv/pos-service" }}{{ .Data.api_port }}{{ end }}"
+API_PROTOCOL="{{ with secret "kv/pos-service" }}{{ .Data.api_protocol }}{{ end }}"
+BROKER_HOST="{{ with secret "kv/pos-service" }}{{ .Data.broker_host }}{{ end }}"
+BROKER_PORT="{{ with secret "kv/pos-service" }}{{ .Data.broker_port }}{{ end }}"
+BROKER_PROTOCOL="{{ with secret "kv/pos-service" }}{{ .Data.broker_protocol }}{{ end }}"

@@ -65,14 +65,19 @@ services:
     depends_on:
       terraform:
         condition: service_completed_successfully
+      vault:
+        condition: service_started
     volumes:
       - ./pos-service/src:/app/src
       - ./pos-service/healthcheck.sh:/app/healthcheck.sh
+      - ./vault-setup/pos-service/env:/vault-secrets:ro      
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
     environment:
       - PYTHONUNBUFFERED=1
+      - VAULT_ADDR=http://vault:8200
+      - ENV_FILE_PATH=/vault-secrets/.env
     command: bash /app/healthcheck.sh
     restart: "no"
     networks:
@@ -210,6 +215,24 @@ services:
     command: ["-config.file=/etc/tempo-config.yaml"]
     networks:
       - services-network
+
+  vault:
+    build:
+      context: ./vault-setup
+      dockerfile: Dockerfile
+    container_name: vault
+    volumes:
+      - ./vault-setup/config:/vault/config
+      - ./vault-setup/data:/vault/data
+      - ./vault-setup/setup:/vault/setup
+      - ./vault-setup/pos-service:/vault/pos-service
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_API_ADDR=http://0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    command: sh /vault/setup/foreground_job.sh
+    restart: unless-stopped
 
 volumes:
   storage-group:
