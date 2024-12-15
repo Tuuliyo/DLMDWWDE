@@ -3,34 +3,34 @@ import logging
 
 def setup_logger():
     """
-    Sets up and configures a logger for the aggregation service.
+    Sets up a logger for the POS service with both file and console handlers.
 
-    The logger writes error-level logs to both a file and the console. It ensures
-    that the log directory exists before creating log files.
+    - Ensures a `/app/logs` directory exists for storing log files.
+    - Logs messages to both a file and the console.
+    - Uses the ERROR logging level by default for minimal output in production.
 
     Returns:
-        logging.Logger: Configured logger instance for the aggregation service.
+        logging.Logger: Configured logger instance.
     """
-    # Create a logger for the aggregation service
-    logger = logging.getLogger("aggregation-service")
-    logger.setLevel(logging.ERROR)  # Set the log level to ERROR
+    logger = logging.getLogger("pos-service")
+    logger.setLevel(logging.ERROR)
 
-    # Define the directory for log files
+    # Ensure the logs directory exists
     log_dir = "/app/logs"
-    os.makedirs(log_dir, exist_ok=True)  # Ensure the logs directory exists
+    os.makedirs(log_dir, exist_ok=True)
 
-    # Configure file handler for logging
+    # File handler for logging to a file
     log_file_path = os.path.join(log_dir, "api_logs.log")
-    file_handler = logging.FileHandler(log_file_path)  # Logs will be written to this file
-    file_handler.setLevel(logging.ERROR)  # File handler logs only ERROR-level messages
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")  # Log format
+    file_handler = logging.FileHandler(log_file_path)
+    file_handler.setLevel(logging.ERROR)
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)  # Add file handler to the logger
+    logger.addHandler(file_handler)
 
-    # Configure console handler for logging
-    console_handler = logging.StreamHandler()  # Logs will also appear in the console
-    console_handler.setLevel(logging.ERROR)  # Console handler logs only ERROR-level messages
+    # Console handler for logging to the terminal
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
     console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)  # Add console handler to the logger
+    logger.addHandler(console_handler)
 
     return logger
