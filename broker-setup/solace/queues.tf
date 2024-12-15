@@ -1,23 +1,26 @@
-// Create a queue with a subscription for the receipts topic
+# ------------------------------------------------------------------------------
+# Terraform configuration for creating queues and subscriptions in Solace Message Broker.
+# This setup includes:
+# - A queue for receipt messages with a corresponding subscription.
+# - Per-store queues and subscriptions for aggregations.
+# ------------------------------------------------------------------------------
+
 resource "solacebroker_msg_vpn_queue" "receipts_queue" {
-    queue_name = data.vault_generic_secret.message_broker_aggregation_service_config.data["queue_name"]
+    queue_name   = data.vault_generic_secret.message_broker_aggregation_service_config.data["queue_name"]
     msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
-    access_type = "exclusive"
+    access_type  = "exclusive"
     egress_enabled = true
     ingress_enabled = true
-    owner = solacebroker_msg_vpn_client_username.aggregation_service.client_username
-    permission = "no-access"
-
+    owner          = solacebroker_msg_vpn_client_username.aggregation_service.client_username
+    permission     = "no-access"
 }
 
 resource "solacebroker_msg_vpn_queue_subscription" "receipts_subscription" {
-    queue_name = solacebroker_msg_vpn_queue.receipts_queue.queue_name
-    msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
+    queue_name        = solacebroker_msg_vpn_queue.receipts_queue.queue_name
+    msg_vpn_name      = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
     subscription_topic = "${data.vault_generic_secret.message_broker_config.data["pos_topic_prefix"]}/receipt/>"
 }
 
-
-# Create queues for each store
 resource "solacebroker_msg_vpn_queue" "store_queue" {
     count = var.number_of_stores
 
@@ -28,7 +31,6 @@ resource "solacebroker_msg_vpn_queue" "store_queue" {
     permission      = "no-access"
 }
 
-# Create subscriptions for each store's queue
 resource "solacebroker_msg_vpn_queue_subscription" "store_subscription" {
     count = var.number_of_stores
 

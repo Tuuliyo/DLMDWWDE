@@ -1,3 +1,9 @@
+# ------------------------------------------------------------------------------
+# Terraform configuration for creating client usernames in Solace Message Broker.
+# Client usernames define the credentials and permissions for services interacting
+# with the broker, such as Validation Service, Aggregation Service, and Telemetry.
+# ------------------------------------------------------------------------------
+
 resource "solacebroker_msg_vpn_client_username" "validation_service" {
     client_username = data.vault_generic_secret.message_broker_validation_service_creds.data["username"]
     msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
@@ -24,7 +30,7 @@ resource "solacebroker_msg_vpn_client_username" "telemetry" {
     client_username = data.vault_generic_secret.message_broker_otel_creds.data["username"]
     msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
     password = data.vault_generic_secret.message_broker_otel_creds.data["password"]
-    client_profile_name = "#telemetry-${solacebroker_msg_vpn_telemetry_profile.otel.telemetry_profile_name}" 
+    client_profile_name = "#telemetry-${solacebroker_msg_vpn_telemetry_profile.otel.telemetry_profile_name}"
     acl_profile_name = "#telemetry-${solacebroker_msg_vpn_telemetry_profile.otel.telemetry_profile_name}"
     enabled = true
     subscription_manager_enabled = true

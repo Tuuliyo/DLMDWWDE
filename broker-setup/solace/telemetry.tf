@@ -1,3 +1,11 @@
+# ------------------------------------------------------------------------------
+# Terraform configuration for setting up OpenTelemetry (OTel) telemetry profiles 
+# in Solace Message Broker. This includes:
+# - A telemetry profile for trace collection.
+# - A trace filter for full traces.
+# - A subscription for the trace filter.
+# ------------------------------------------------------------------------------
+
 resource "solacebroker_msg_vpn_telemetry_profile" "otel" {
     msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
     telemetry_profile_name = "otel"
@@ -16,9 +24,8 @@ resource "solacebroker_msg_vpn_telemetry_profile_trace_filter" "traces" {
 
 resource "solacebroker_msg_vpn_telemetry_profile_trace_filter_subscription" "all" {
     msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
-    subscription= ">"
+    subscription = ">"
     subscription_syntax = "smf"
     telemetry_profile_name = solacebroker_msg_vpn_telemetry_profile.otel.telemetry_profile_name
     trace_filter_name = solacebroker_msg_vpn_telemetry_profile_trace_filter.traces.trace_filter_name
 }
-

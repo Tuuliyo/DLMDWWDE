@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------------
+# Terraform configuration for creating and enabling a Solace Message VPN.
+# A Message VPN (Virtual Private Network) isolates message traffic between
+# services and defines authentication, spool usage, and protocol services.
+# ------------------------------------------------------------------------------
+
+# Message VPN configuration
 resource "solacebroker_msg_vpn" "basic_enable" {
     msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
     alias = "pos-simulation"
