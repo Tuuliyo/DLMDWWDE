@@ -1,3 +1,11 @@
+# ------------------------------------------------------------------------------
+# Vault Agent Configuration
+# This configuration enables auto-authentication for the validation service using
+# the AppRole method. It defines a file sink for writing secrets as environment
+# variables, specifies a template for rendering environment variables, and sets
+# the Vault server address for communication.
+# ------------------------------------------------------------------------------
+
 auto_auth {
     method "approle" {
         config = {

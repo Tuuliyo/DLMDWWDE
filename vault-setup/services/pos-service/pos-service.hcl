@@ -1,3 +1,11 @@
+# ------------------------------------------------------------------------------
+# Vault Agent Configuration
+# This configuration enables auto-authentication using the AppRole method for the
+# POS service. It specifies a file sink for writing secrets as environment variables,
+# defines template rendering for environment variable injection, and sets the Vault
+# server address for communication.
+# ------------------------------------------------------------------------------
+
 auto_auth {
     method "approle" {
         config = {

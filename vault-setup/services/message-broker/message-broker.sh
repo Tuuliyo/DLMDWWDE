@@ -1,6 +1,12 @@
 #!/bin/sh
 
-# Password length and options
+# ------------------------------------------------------------------------------
+# Script to Populate Vault Secrets for Message Broker and Services
+# This script generates secure credentials, configures message broker details, 
+# and populates them into Vault using the `vault kv put` command.
+# ------------------------------------------------------------------------------
+
+# Constants
 PASSWORD_LENGTH=16
 SPECIAL_CHARS=true
 
@@ -9,12 +15,11 @@ generate_password() {
     if [ "$SPECIAL_CHARS" = true ]; then
         tr -dc 'A-Za-z0-9!#$%*_+?' </dev/urandom | head -c $PASSWORD_LENGTH
     else
-        # Generate a password without special characters
         tr -dc 'A-Za-z0-9' </dev/urandom | head -c $PASSWORD_LENGTH
     fi
 }
 
-# Variables
+# Environment variables
 SECRETS_BASE_PATH="kv/message-broker"
 HTTP_HOST="message-broker"
 HTTP_PORT="8080"
@@ -45,6 +50,7 @@ if [ -z "$VAULT_ADDR" ]; then
     exit 1
 fi
 
+# Populate Vault secrets
 echo "Populating data at $SECRETS_BASE_PATH/config..."
 vault kv put $SECRETS_BASE_PATH/config \
     http_host="$HTTP_HOST" \
@@ -59,7 +65,7 @@ vault kv put $SECRETS_BASE_PATH/config \
     amqp_host="$AMQP_HOST" \
     amqp_port="$AMQP_PORT" \
     msg_vpn="$MSG_VPN" \
-    pos_topic_prefix="$POS_TOPIC_PREFIX" \
+    pos_topic_prefix="$POS_TOPIC_PREFIX"
 
 echo "Populating data at $SECRETS_BASE_PATH/config/aggregation-service..."
 vault kv put $SECRETS_BASE_PATH/config/aggregation-service \

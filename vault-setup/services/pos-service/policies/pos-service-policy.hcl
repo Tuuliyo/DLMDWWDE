@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------------
+# Vault Policy Configuration
+# This configuration defines access permissions for reading secrets in the KV
+# secrets engine, including settings and credentials for the message broker and
+# validation service.
+# ------------------------------------------------------------------------------
+
 path "kv/message-broker/config" {
     capabilities = ["read"]
 }

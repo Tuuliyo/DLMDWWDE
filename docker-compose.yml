@@ -1,5 +1,9 @@
-# This Docker Compose file sets up a multi-service environment for a data engineering project.
-# It includes services for message brokering, infrastructure management, application services, monitoring, and secrets management.
+# ------------------------------------------------------------------------------
+# Docker Compose Configuration
+# This file defines a multi-service environment for a data engineering project.
+# It includes services for message brokering, application deployment, monitoring,
+# and secrets management, along with dependencies and network configurations.
+# ------------------------------------------------------------------------------
 
 version: "3.8"
 
@@ -49,7 +53,8 @@ services:
       - ./broker-setup/scripts/setup.sh:/workspace/setup/setup.sh
       - ./vault-setup/services/message-broker/env/.env:/vault-secrets/.env:ro
     working_dir: /workspace
-    entrypoint: ["sh", "-c", "source /vault-secrets/.env && sh /workspace/setup/setup.sh"]
+    entrypoint:
+      ["sh", "-c", "source /vault-secrets/.env && sh /workspace/setup/setup.sh"]
     environment:
       - ENV_FILE_PATH=/vault-secrets/.env
     depends_on:
@@ -72,7 +77,7 @@ services:
     volumes:
       - ./pos-service/src:/app/src
       - ./pos-service/healthcheck.sh:/app/healthcheck.sh
-      - ./vault-setup/services/pos-service/env/.env:/vault-secrets/.env:ro      
+      - ./vault-setup/services/pos-service/env/.env:/vault-secrets/.env:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
@@ -96,7 +101,7 @@ services:
     volumes:
       - ./validation-service/src:/app/src
       - ./validation-service/healthcheck.sh:/app/healthcheck.sh
-      - ./vault-setup/services/validation-service/env/.env:/vault-secrets/.env:ro 
+      - ./vault-setup/services/validation-service/env/.env:/vault-secrets/.env:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.validation-service.rule=PathPrefix(`/validation-service`)"
@@ -162,7 +167,7 @@ services:
       - SOLACE_LISTEN_ADDR=0.0.0.0:9628
       - SOLACE_TIMEOUT=5s
       - SOLACE_SSL_VERIFY=false
-      - SOLACE_LISTEN_TLS=false 
+      - SOLACE_LISTEN_TLS=false
     ports:
       - "9628:9628"
     depends_on:
@@ -170,7 +175,7 @@ services:
         condition: service_completed_successfully
     networks:
       - services-network
-  
+
   # OpenTelemetry collector for monitoring
   otel-collector:
     build:

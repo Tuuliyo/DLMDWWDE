@@ -1,6 +1,12 @@
 #!/bin/sh
 
-# Password length and options
+# ------------------------------------------------------------------------------
+# Script to Populate Vault Secrets for Validation Service
+# This script generates secure credentials, configures API details, and populates
+# them into Vault using the `vault kv put` command.
+# ------------------------------------------------------------------------------
+
+# Constants
 PASSWORD_LENGTH=16
 SPECIAL_CHARS=true
 
@@ -9,12 +15,11 @@ generate_password() {
     if [ "$SPECIAL_CHARS" = true ]; then
         tr -dc 'A-Za-z0-9!#$%*_+?' </dev/urandom | head -c $PASSWORD_LENGTH
     else
-        # Generate a password without special characters
         tr -dc 'A-Za-z0-9' </dev/urandom | head -c $PASSWORD_LENGTH
     fi
 }
 
-# Variables
+# Environment variables
 SECRETS_BASE_PATH="kv/validation-service"
 API_PROTOCOL="http"
 API_HOST="traefik"
@@ -30,6 +35,7 @@ if [ -z "$VAULT_ADDR" ]; then
     exit 1
 fi
 
+# Populate Vault secrets
 echo "Populating data at $SECRETS_BASE_PATH/config..."
 vault kv put $SECRETS_BASE_PATH/config \
     api_protocol="$API_PROTOCOL" \
@@ -39,11 +45,11 @@ vault kv put $SECRETS_BASE_PATH/config \
 echo "Populating data at $SECRETS_BASE_PATH/creds/aggregation-service..."
 vault kv put $SECRETS_BASE_PATH/creds/aggregation-service \
     username="$AGGREGATION_SERVICE_USERNAME" \
-    password="$AGGREGATION_SERVICE_PASSWORD" 
+    password="$AGGREGATION_SERVICE_PASSWORD"
 
 echo "Populating data at $SECRETS_BASE_PATH/creds/pos-service..."
 vault kv put $SECRETS_BASE_PATH/creds/pos-service \
     username="$POS_SERVICE_USERNAME" \
-    password="$POS_SERVICE_PASSWORD" 
+    password="$POS_SERVICE_PASSWORD"
 
 echo "Data for validation service populated successfully."

@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------------
+# Vault Policy Configuration
+# This configuration defines access permissions for reading secrets related to
+# the message broker configuration and OpenTelemetry credentials stored in the
+# KV secrets engine.
+# ------------------------------------------------------------------------------
+
 path "kv/message-broker/config" {
     capabilities = ["read"]
 }
