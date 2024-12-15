@@ -6,8 +6,8 @@ VAULT_DATA_DIR="./vault/data"
 VAULT_INTERNAL_ADDR="http://127.0.0.1:8200"
 VAULT_EXTERNAL_ADDR="http://vault:8200"
 SHARED_DIR="/etc/vault-agent/shared"
-SERVICES="message-broker validation-service solace-prometheus-exporter pos-service aggregation-service otel-collector"
-SEPARATE_SETUP_SERVICES="message-broker validation-service solace-prometheus-exporter"
+SERVICES="message-broker validation-service pos-service aggregation-service otel-collector"
+SEPARATE_SETUP_SERVICES="message-broker validation-service"
 
 # Export VAULT_ADDR globally
 export VAULT_ADDR="$VAULT_INTERNAL_ADDR"
