@@ -317,7 +317,7 @@ kv/
 ## Contact
 
 For further information, please contact:  
-**Name**: [Jonas Kinold]
-**LinkedIn**: [Jonas Kinold](https://www.linkedin.com/in/jonas-kinold/)
-**GitHub**: [Tuuliyo](https://github.com/Tuuliyo)]
+- **Name**: Jonas Kinold
+- **LinkedIn**: [Jonas Kinold](https://www.linkedin.com/in/jonas-kinold/)
+- **GitHub**: [Tuuliyo](https://github.com/Tuuliyo)
 
