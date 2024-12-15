@@ -1,6 +1,10 @@
+# This Docker Compose file sets up a multi-service environment for a data engineering project.
+# It includes services for message brokering, infrastructure management, application services, monitoring, and secrets management.
+
 version: "3.8"
 
 services:
+  # Message broker service using Solace PubSub+
   message-broker:
     image: solace/solace-pubsub-standard:latest
     container_name: solace-pubsub-broker
@@ -15,7 +19,7 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        max_attempts: 1
+        max_attempts: 3
     ports:
       - "8008:8008"
       - "1443:1443"
@@ -36,6 +40,7 @@ services:
     networks:
       - services-network
 
+  # Terraform service for infrastructure management
   terraform:
     image: hashicorp/terraform:latest
     container_name: terraform
@@ -53,6 +58,7 @@ services:
     networks:
       - services-network
 
+  # Point of Sale (POS) service
   pos-service:
     build:
       context: ./pos-service
@@ -78,6 +84,7 @@ services:
     networks:
       - services-network
 
+  # Validation service
   validation-service:
     build:
       context: ./validation-service
@@ -101,6 +108,7 @@ services:
     networks:
       - services-network
 
+  # Traefik load balancer service
   traefik:
     image: traefik:v2.5
     container_name: traefik-lb
@@ -121,12 +129,16 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
 
+  # Aggregation pipeline service
   aggregation-pipeline:
     build:
       context: ./aggregation-pipeline
     depends_on:
       terraform:
         condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.aggregation-pipeline.loadbalancer.server.port=8000"
     volumes:
       - ./aggregation-pipeline/src:/app/src
       - ./aggregation-pipeline/healthcheck.sh:/app/healthcheck.sh
@@ -137,11 +149,12 @@ services:
     networks:
       - services-network
 
+  # Solace Prometheus exporter for monitoring
   solace-prometheus-exporter:
     image: solacecommunity/solace-prometheus-exporter:latest
     container_name: solace-prometheus-exporter
     platform: linux/amd64
-    environment: # Load environment variables here, because the image does not support dynamic environment variables nor dynamic entrypoints nor static environment variables
+    environment: # No dynamic configuration available for this exporter
       - SOLACE_USERNAME=admin
       - SOLACE_PASSWORD=admin
       - SOLACE_DEFAULT_VPN=default
@@ -151,23 +164,24 @@ services:
       - SOLACE_SSL_VERIFY=false
       - SOLACE_LISTEN_TLS=false 
     ports:
-      - "9628:9628"  # Port for Prometheus to scrape metrics
+      - "9628:9628"
     depends_on:
       terraform:
         condition: service_completed_successfully
     networks:
       - services-network
   
+  # OpenTelemetry collector for monitoring
   otel-collector:
     build:
-      context: ./monitoring-service/otel-collector # Build own image with bash to priovide dynamic env variables from vault with mounted .env file
+      context: ./monitoring-service/otel-collector # Own Dockerfile for custom configuration and dynamic secrets
       dockerfile: Dockerfile
     container_name: otel-collector
     ports:
-      - "4318:4318"    # OTLP gRPC
-      - "4317:4317"    # OTLP HTTP
-      - "9464:9464"    # Prometheus metrics
-      - "55681:55681"  # OTLP metrics
+      - "4318:4318"
+      - "4317:4317"
+      - "9464:9464"
+      - "55681:55681"
     volumes:
       - ./monitoring-service/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
       - ./vault-setup/services/otel-collector/env/.env:/vault-secrets/.env
@@ -183,6 +197,7 @@ services:
     networks:
       - services-network
 
+  # Prometheus service for monitoring
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -196,6 +211,7 @@ services:
     networks:
       - services-network
 
+  # Grafana service for monitoring dashboards
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -210,6 +226,7 @@ services:
       - otel-collector
       - tempo
 
+  # Tempo service for distributed tracing
   tempo:
     image: grafana/tempo:latest
     container_name: tempo
@@ -217,9 +234,9 @@ services:
       - otel-collector
       - prometheus
     ports:
-      - "14268:14268"  # HTTP receiver for traces
-      - "43172:4317"   # OTLP gRPC receiver
-      - "3200:3200"    # Tempo's HTTP API
+      - "14268:14268"
+      - "43172:4317"
+      - "3200:3200"
     volumes:
       - ./monitoring-service/tempo/tempo-data:/var/tempo/traces
       - ./monitoring-service/tempo/tempo-config.yaml:/etc/tempo-config.yaml
@@ -227,6 +244,7 @@ services:
     networks:
       - services-network
 
+  # Vault service for secrets management
   vault:
     build:
       context: ./vault-setup

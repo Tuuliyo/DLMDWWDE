@@ -7,7 +7,7 @@ SPECIAL_CHARS=true
 # Function to generate a secure password
 generate_password() {
     if [ "$SPECIAL_CHARS" = true ]; then
-        tr -dc 'A-Za-z0-9!@#$%*_+?' </dev/urandom | head -c $PASSWORD_LENGTH
+        tr -dc 'A-Za-z0-9!#$%*_+?' </dev/urandom | head -c $PASSWORD_LENGTH
     else
         # Generate a password without special characters
         tr -dc 'A-Za-z0-9' </dev/urandom | head -c $PASSWORD_LENGTH

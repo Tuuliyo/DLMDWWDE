@@ -18,10 +18,11 @@ from opentelemetry.trace import StatusCode, SpanKind
 from logger_config import setup_logger
 import os
 
+# Initialize logger and tracer
 logger = setup_logger()
 tracer = trace.get_tracer(__name__)
 
-
+# Configuration for Solace Messaging Service
 POS_TRANSACTION_CONFIG = {
     "solace.messaging.transport.host": f"{os.getenv('BROKER_SMF_PROTOCOL')}://{os.getenv('BROKER_SMF_HOST')}:{os.getenv('BROKER_SMF_PORT')}",
     "solace.messaging.service.vpn-name": os.getenv("BROKER_MSG_VPN", "default"),
@@ -32,14 +33,31 @@ POS_QUEUE_NAME = os.getenv('BROKER_QUEUE_NAME')
 
 
 class SolaceSourcePartition(StatelessSourcePartition):
+    """
+    A source partition for consuming messages from a Solace queue.
+
+    Handles message receiving, processing, acknowledgment, and tracing integration.
+    """
+
     def __init__(self):
+        """
+        Initializes the source partition by setting up the messaging service and receiver.
+        """
         self.messaging_service = self._initialize_messaging_service(
             POS_TRANSACTION_CONFIG
         )
         self.receiver = self._initialize_persistent_receiver(POS_QUEUE_NAME)
 
     def _initialize_messaging_service(self, config):
-        """Initializes and connects the messaging service."""
+        """
+        Initializes and connects the Solace Messaging Service.
+
+        Args:
+            config (dict): Configuration dictionary for Solace Messaging Service.
+
+        Returns:
+            MessagingService: Connected messaging service instance.
+        """
         messaging_service = (
             MessagingService.builder()
             .from_properties(config)
@@ -53,7 +71,15 @@ class SolaceSourcePartition(StatelessSourcePartition):
         return messaging_service
 
     def _initialize_persistent_receiver(self, queue_name):
-        """Initializes the persistent message receiver."""
+        """
+        Initializes the persistent message receiver for a given queue.
+
+        Args:
+            queue_name (str): Name of the Solace queue.
+
+        Returns:
+            PersistentMessageReceiver: Initialized and started message receiver.
+        """
         durable_exclusive_queue = Queue.durable_exclusive_queue(queue_name)
         try:
             persistent_receiver: PersistentMessageReceiver = (
@@ -73,6 +99,14 @@ class SolaceSourcePartition(StatelessSourcePartition):
             raise
 
     def next_batch(self):
+        """
+        Receives the next batch of messages from the queue.
+
+        Processes messages with tracing and acknowledges them upon successful processing.
+
+        Returns:
+            list[str]: A list of payloads from the processed messages.
+        """
         try:
             message = self.receiver.receive_message(timeout=1)
             if message:
@@ -94,12 +128,17 @@ class SolaceSourcePartition(StatelessSourcePartition):
                         )
                         span.set_attribute("messaging.operation", "process")
 
+                        # Extract message payload
                         payload = (
                             message.get_payload_as_string()
                             or message.get_payload_as_bytes().decode()
                         )
                         logger.info(f"Received message: {payload}")
+
+                        # Acknowledge the message
                         self.receiver.ack(message)
+
+                        # Set trace status to OK
                         span.set_status(StatusCode.OK)
                         return [payload]
                 except Exception as e:
@@ -113,7 +152,10 @@ class SolaceSourcePartition(StatelessSourcePartition):
             return []
 
     def close(self):
-        """Gracefully shuts down the consumer."""
+        """
+        Gracefully shuts down the source partition by terminating the receiver
+        and disconnecting the messaging service.
+        """
         if self.receiver:
             self.receiver.terminate()
             logger.info("Receiver terminated.")
@@ -123,5 +165,22 @@ class SolaceSourcePartition(StatelessSourcePartition):
 
 
 class SolaceDynamicSource(DynamicSource):
+    """
+    A dynamic source for consuming messages from Solace.
+
+    Builds source partitions for distributed processing.
+    """
+
     def build(self, step_id, worker_index, worker_count):
+        """
+        Builds and returns a new source partition.
+
+        Args:
+            step_id (str): The ID of the pipeline step.
+            worker_index (int): The index of the current worker.
+            worker_count (int): The total number of workers.
+
+        Returns:
+            SolaceSourcePartition: A new instance of the source partition.
+        """
         return SolaceSourcePartition()
