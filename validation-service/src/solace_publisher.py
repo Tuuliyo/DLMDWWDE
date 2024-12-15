@@ -22,8 +22,30 @@ from logger_config import setup_logger
 # Initialize logger
 logger = setup_logger()
 
+
 class SolacePublisher:
+    """
+    A publisher for sending messages to a Solace topic.
+
+    Attributes:
+        messaging_service (MessagingService): Solace messaging service instance.
+        direct_publisher (DirectMessagePublisher): Direct message publisher for sending messages.
+        message_builder (MessageBuilder): Builder for creating messages.
+
+    Methods:
+        publish_message(topic, message, application_message_id):
+            Publishes a message to a specific topic.
+        close():
+            Gracefully shuts down the publisher and messaging service.
+    """
+
     def __init__(self, config: dict[str, Any]):
+        """
+        Initializes the SolacePublisher.
+
+        Args:
+            config (dict): Configuration dictionary for the Solace messaging service.
+        """
         self.messaging_service = self._initialize_messaging_service(config)
 
         # Event Handling for the messaging service
@@ -36,7 +58,15 @@ class SolacePublisher:
         self.message_builder = self.messaging_service.message_builder()
 
     def _initialize_messaging_service(self, config: dict[str, Any]):
-        """Initializes and connects the messaging service."""
+        """
+        Initializes and connects the messaging service.
+
+        Args:
+            config (dict): Configuration for the messaging service.
+
+        Returns:
+            MessagingService: A connected messaging service instance.
+        """
         messaging_service = (
             MessagingService.builder()
             .from_properties(config)
@@ -48,7 +78,12 @@ class SolacePublisher:
         return messaging_service
 
     def _initialize_direct_publisher(self):
-        """Initializes the direct message publisher."""
+        """
+        Initializes the direct message publisher.
+
+        Returns:
+            DirectMessagePublisher: A ready-to-use message publisher instance.
+        """
         direct_publisher = (
             self.messaging_service.create_direct_message_publisher_builder()
             .build()
@@ -59,7 +94,27 @@ class SolacePublisher:
         return direct_publisher
 
     def publish_message(self, topic: str, message: str, application_message_id: str):
-        """Publishes messages to a topic with transaction_id as the message ID."""
+        """
+        Publishes a message to a specified topic.
+
+        Args:
+            topic (str): The Solace topic to publish the message to.
+            message (str): The message content in JSON format.
+            application_message_id (str): The ID associated with the application message.
+
+        Raises:
+            PubSubPlusClientError: If there is an error during publishing.
+
+        Logs:
+            - Success or failure of the message publishing.
+            - Debug information about the message content and topic.
+
+        OpenTelemetry Attributes:
+            - `messaging.system`: Identifies the messaging system as PubSub+.
+            - `messaging.destination_kind`: Indicates that the destination is a topic.
+            - `messaging.destination`: Specifies the topic name.
+            - `messaging.operation`: Describes the operation as publish.
+        """
         try:
             topic_obj = Topic.of(topic)
 
@@ -110,7 +165,13 @@ class SolacePublisher:
             logger.error(f"Error publishing message: {e}")
 
     def close(self):
-        """Gracefully shuts down the publisher and messaging service."""
+        """
+        Gracefully shuts down the publisher and messaging service.
+
+        Logs:
+            - Termination of the direct publisher.
+            - Disconnection of the messaging service.
+        """
         if self.direct_publisher and self.direct_publisher.is_ready():
             self.direct_publisher.terminate()
             logger.info("Direct publisher terminated.")
@@ -122,6 +183,15 @@ class SolacePublisher:
 class ServiceEventHandler(
     ReconnectionListener, ReconnectionAttemptListener, ServiceInterruptionListener
 ):
+    """
+    Handles events related to messaging service interruptions and reconnections.
+
+    Methods:
+        on_reconnected(e): Handles successful reconnections.
+        on_reconnecting(e): Handles reconnection attempts.
+        on_service_interrupted(e): Handles service interruptions.
+    """
+
     def on_reconnected(self, e: ServiceEvent):
         logger.info("Reconnected to the messaging service.")
         logger.debug(f"Error cause: {e.get_cause()}")
@@ -139,6 +209,13 @@ class ServiceEventHandler(
 
 
 class PublisherErrorHandling(PublishFailureListener):
+    """
+    Handles errors during message publishing.
+
+    Methods:
+        on_failed_publish(e): Logs failed publish events.
+    """
+
     def on_failed_publish(self, e: "FailedPublishEvent"):
         logger.error("Failed to publish message.")
         logger.debug(f"Failed Publish Event: {e}")

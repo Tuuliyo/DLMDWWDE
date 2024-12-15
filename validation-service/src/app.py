@@ -17,16 +17,23 @@ from logger_config import setup_logger
 # Initialize logger
 logger = setup_logger()
 
-# Initialize OpenTelemetry tracing
 def init_tracing():
+    """
+    Initializes OpenTelemetry tracing for the application.
+
+    - Configures the tracer provider with resource attributes.
+    - Sets up the OTLP exporter to send traces to the OpenTelemetry Collector.
+    - Adds a batch span processor for optimized trace export.
+    - Instruments the `requests` library for tracing HTTP requests.
+
+    Raises:
+        Exception: If tracing initialization fails.
+    """
     resource = Resource.create(
-        attributes={
-            "service.name": "validation-service"  # Set the service name for tracing
-        }
+        attributes={"service.name": "validation-service"}
     )
     trace.set_tracer_provider(TracerProvider(resource=resource))
 
-    # Configure the OTLP exporter to send traces to the OpenTelemetry Collector
     otlp_exporter = OTLPSpanExporter(
         endpoint="http://otel-collector:4317", insecure=True
     )
@@ -45,7 +52,7 @@ def init_tracing():
 # Initialize FastAPI application
 app = FastAPI(
     title="Validation Service",
-    description="Service to validate events send to message broker",
+    description="Service to validate events sent to the message broker",
     version="1.0",
     openapi_url="/api/v1/pos/openapi.json",
     docs_url="/api/v1/pos/docs",
@@ -59,25 +66,46 @@ FastAPIInstrumentor.instrument_app(app)
 instrumentor = Instrumentator().instrument(app)
 app.add_middleware(OpenTelemetryMiddleware)
 
+# Include routers for different endpoints
 app.include_router(transaction.router)
 app.include_router(health.router)
 app.include_router(amount_per_store.router)
 
 @app.on_event("startup")
 async def startup_event():
-    print("Validation Service started")
+    """
+    Event triggered when the application starts.
+
+    - Logs the startup event.
+    - Exposes Prometheus metrics via the application.
+    """
+    logger.info("Validation Service started")
     instrumentor.expose(app)
 
-# Custom error handler for validation errors
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Custom exception handler for FastAPI request validation errors.
+
+    - Extracts detailed validation error messages.
+    - Logs validation errors.
+    - Returns a JSON response with status 422 and error details.
+
+    Args:
+        request (Request): The incoming request object.
+        exc (RequestValidationError): The validation error raised by FastAPI.
+
+    Returns:
+        JSONResponse: A structured error response with validation details.
+    """
     error_messages = []
     for error in exc.errors():
         field = error.get("loc")[-1]  # Get the field name
         msg = error.get("msg")  # Get the error message
         error_messages.append(f"Field '{field}' validation failed: {msg}")
 
-    print(f"Validation error: {error_messages}")
+    logger.error(f"Validation error: {error_messages}")
     return JSONResponse(
         status_code=422,
         content=jsonable_encoder(
