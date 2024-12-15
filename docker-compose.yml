@@ -33,16 +33,6 @@ services:
       - "55003:55003"
       - "55443:55443"
       - "2222:2222"
-    environment:
-      - username_admin_globalaccesslevel=admin
-      - username_admin_password=admin
-      - system_scaling_maxconnectioncount=100
-    healthcheck:
-      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8080/health-check/"]
-      interval: 10s
-      retries: 10
-      start_period: 30s
-      timeout: 10s
     networks:
       - services-network
 
@@ -51,9 +41,15 @@ services:
     container_name: terraform
     volumes:
       - ./broker-setup/solace:/workspace
-      - ./broker-setup/scripts/setup.sh:/workspace/setup.sh
+      - ./broker-setup/scripts/setup.sh:/workspace/setup/setup.sh
+      - ./vault-setup/services/message-broker/env/.env:/vault-secrets/.env:ro
     working_dir: /workspace
-    entrypoint: ["sh", "/workspace/setup.sh"]
+    entrypoint: ["sh", "-c", "source /vault-secrets/.env && sh /workspace/setup/setup.sh"]
+    environment:
+      - ENV_FILE_PATH=/vault-secrets/.env
+    depends_on:
+      vault:
+        condition: service_healthy
     networks:
       - services-network
 
@@ -145,15 +141,15 @@ services:
     image: solacecommunity/solace-prometheus-exporter:latest
     container_name: solace-prometheus-exporter
     platform: linux/amd64
-    environment:
-      - SOLACE_LISTEN_ADDR=0.0.0.0:9628
-      - SOLACE_SCRAPE_URI=http://message-broker:8080
+    environment: # Load environment variables here, because the image does not support dynamic environment variables nor dynamic entrypoints nor static environment variables
       - SOLACE_USERNAME=admin
       - SOLACE_PASSWORD=admin
+      - SOLACE_DEFAULT_VPN=default
+      - SOLACE_SCRAPE_URI=http://message-broker:8080
+      - SOLACE_LISTEN_ADDR=0.0.0.0:9628
       - SOLACE_TIMEOUT=5s
       - SOLACE_SSL_VERIFY=false
-      - SOLACE_LISTEN_TLS=false
-      - SOLACE_DEFAULT_VPN=default
+      - SOLACE_LISTEN_TLS=false 
     ports:
       - "9628:9628"  # Port for Prometheus to scrape metrics
     depends_on:
@@ -163,7 +159,9 @@ services:
       - services-network
   
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    build:
+      context: ./monitoring-service/otel-collector # Build own image with bash to priovide dynamic env variables from vault with mounted .env file
+      dockerfile: Dockerfile
     container_name: otel-collector
     ports:
       - "4318:4318"    # OTLP gRPC
@@ -172,10 +170,16 @@ services:
       - "55681:55681"  # OTLP metrics
     volumes:
       - ./monitoring-service/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    command: ["--config", "/etc/otel-collector-config.yaml"]
+      - ./vault-setup/services/otel-collector/env/.env:/vault-secrets/.env
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "export $(grep -v '^#' /vault-secrets/.env | xargs) &&
+      /otelcol-contrib --config /etc/otel-collector-config.yaml"
     depends_on:
       terraform:
         condition: service_completed_successfully
+      vault:
+        condition: service_started
     networks:
       - services-network
 
@@ -240,6 +244,13 @@ services:
       - "8200:8200"
     command: sh /vault/setup/foreground_job.sh
     restart: unless-stopped
+    networks:
+      - services-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8200/v1/sys/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   storage-group:

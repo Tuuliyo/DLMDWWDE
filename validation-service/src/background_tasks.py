@@ -11,13 +11,13 @@ logger = setup_logger()
 # Configuration for the SolacePublisher to publish POS transactions
 POS_TRANSACTION_CONFIG = {
     "solace.messaging.transport.host": f"{os.getenv('BROKER_PROTOCOL')}://{os.getenv('BROKER_HOST')}:{os.getenv('BROKER_PORT')}",
-    "solace.messaging.service.vpn-name": os.getenv("BROKER_MSG_VPN", "default"),
-    "solace.messaging.authentication.scheme.basic.username": "sale_pos_transaction_validation",
-    "solace.messaging.authentication.scheme.basic.password": "Validation1234!",
+    "solace.messaging.service.vpn-name": os.getenv("BROKER_MSG_VPN"),
+    "solace.messaging.authentication.scheme.basic.username": os.getenv("BROKER_SMF_USERNAME"),
+    "solace.messaging.authentication.scheme.basic.password": os.getenv("BROKER_SMF_PASSWORD"),
 }
 
 # Setup topic root for POS transactions
-POS_TOPIC_PREFIX = "sale/pos/transaction"
+POS_TOPIC_PREFIX = os.getenv("POS_TOPIC_PREFIX")
 
 # Initialize the SolacePublisher for POS transactions
 POS_PUBLISHER = SolacePublisher(config=POS_TRANSACTION_CONFIG)

@@ -1,23 +1,12 @@
-
-variable "solace_username" {
-    description = "Solace broker admin username"
-    type        = string
+variable "vault_address" {
+    description = "Vault server address"
+    default     = "http://vault:8200"
 }
 
-variable "solace_password" {
-    description = "Solace broker admin password"
-    type        = string
+variable "vault_token" {
+    description = "Vault authentication token"
     sensitive   = true
-}
-
-variable "solace_broker" {
-    description = "Solace broker URL or IP"
-    type        = string
-}
-
-variable "solace_vpn_name" {
-    description = "Solace Message VPN name"
-    type        = string
+    default     = "" 
 }
 
 variable "number_of_stores" {

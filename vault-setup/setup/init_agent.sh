@@ -1,13 +1,16 @@
 #!/bin/sh
 
 # Set variables
+SECRETS_BASE_PATH="kv/vault-service"
 VAULT_DATA_DIR="./vault/data"
-VAULT_ADDR="http://127.0.0.1:8200"
+VAULT_INTERNAL_ADDR="http://127.0.0.1:8200"
+VAULT_EXTERNAL_ADDR="http://vault:8200"
 SHARED_DIR="/etc/vault-agent/shared"
-SERVICES="pos-service validation-service aggregation-service"
+SERVICES="message-broker validation-service solace-prometheus-exporter pos-service aggregation-service otel-collector"
+SEPARATE_SETUP_SERVICES="message-broker validation-service solace-prometheus-exporter"
 
 # Export VAULT_ADDR globally
-export VAULT_ADDR="$VAULT_ADDR"
+export VAULT_ADDR="$VAULT_INTERNAL_ADDR"
 
 # Ensure necessary directories exist
 echo "Creating necessary directories..."
@@ -46,6 +49,16 @@ vault auth enable approle || { echo "Failed to enable AppRole authentication."; 
 echo "Enabling KV secrets engine at path 'kv'..."
 vault secrets enable -path=kv kv || echo "KV engine already enabled."
 
+# Populate vault data with configuration and root token information for services to use during setup
+echo "Populating data at $SECRETS_BASE_PATH/config..."
+vault kv put $SECRETS_BASE_PATH/config \
+    vault_addr="$VAULT_EXTERNAL_ADDR" \
+    api_addr="$VAULT_EXTERNAL_ADDR"
+
+echo "Populating data at $SECRETS_BASE_PATH/config..."
+vault kv put $SECRETS_BASE_PATH/creds/token \
+    root_token="$VAULT_TOKEN"
+
 # Loop through each service to set up policies and roles
 for SERVICE in $SERVICES; do
   SERVICE_DIR="/vault/services/${SERVICE}"
@@ -81,12 +94,16 @@ for SERVICE in $SERVICES; do
 
   chmod 600 "$ROLE_ID_FILE" "$SECRET_ID_FILE"
 
-  # Run service-specific script to populate secrets
-  if [ -f "$SECRETS_SCRIPT" ]; then
-    echo "Running secrets setup script for ${SERVICE}..."
-    sh "$SECRETS_SCRIPT" || { echo "Failed to populate secrets for ${SERVICE}."; exit 1; }
+  # Run service-specific script to populate secrets for selected services
+  if echo "$SEPARATE_SETUP_SERVICES" | grep -q "$SERVICE"; then
+    if [ -f "$SECRETS_SCRIPT" ]; then
+      echo "Running secrets setup script for ${SERVICE}..."
+      sh "$SECRETS_SCRIPT" || { echo "Failed to populate secrets for ${SERVICE}."; exit 1; }
+    else
+      echo "No secrets setup script found for ${SERVICE}. Skipping..."
+    fi
   else
-    echo "No secrets setup script found for ${SERVICE}. Skipping..."
+    echo "Secrets setup script not required for ${SERVICE}. Skipping..."
   fi
 
   echo "${SERVICE} setup completed."

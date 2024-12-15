@@ -1,7 +1,7 @@
 resource "solacebroker_msg_vpn_client_username" "validation_service" {
-    client_username = "sale_pos_transaction_validation"
-    msg_vpn_name = var.solace_vpn_name
-    password = "Validation1234!"
+    client_username = data.vault_generic_secret.message_broker_validation_service_creds.data["username"]
+    msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
+    password = data.vault_generic_secret.message_broker_validation_service_creds.data["password"]
     client_profile_name = solacebroker_msg_vpn_client_profile.validation_service.client_profile_name
     acl_profile_name = solacebroker_msg_vpn_acl_profile.validation_service.acl_profile_name
     enabled = true
@@ -10,9 +10,9 @@ resource "solacebroker_msg_vpn_client_username" "validation_service" {
 }
 
 resource "solacebroker_msg_vpn_client_username" "aggregation_service" {
-    client_username = "sale_pos_transaction_aggregation"
-    msg_vpn_name = var.solace_vpn_name
-    password = "Aggregation1234!"
+    client_username = data.vault_generic_secret.message_broker_aggregation_service_creds.data["username"]
+    msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
+    password = data.vault_generic_secret.message_broker_aggregation_service_creds.data["password"]
     client_profile_name = solacebroker_msg_vpn_client_profile.aggregation_service.client_profile_name
     acl_profile_name = solacebroker_msg_vpn_acl_profile.aggregation_service.acl_profile_name
     enabled = true
@@ -21,9 +21,9 @@ resource "solacebroker_msg_vpn_client_username" "aggregation_service" {
 }
 
 resource "solacebroker_msg_vpn_client_username" "telemetry" {
-    client_username = "telemetry_collector_service"
-    msg_vpn_name = var.solace_vpn_name
-    password = "Telemetry1234!"
+    client_username = data.vault_generic_secret.message_broker_otel_creds.data["username"]
+    msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
+    password = data.vault_generic_secret.message_broker_otel_creds.data["password"]
     client_profile_name = "#telemetry-${solacebroker_msg_vpn_telemetry_profile.otel.telemetry_profile_name}" 
     acl_profile_name = "#telemetry-${solacebroker_msg_vpn_telemetry_profile.otel.telemetry_profile_name}"
     enabled = true

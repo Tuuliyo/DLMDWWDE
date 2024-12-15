@@ -11,6 +11,7 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from logger_config import setup_logger
+import os
 
 logger = setup_logger()
 
@@ -59,7 +60,7 @@ def send_1_million_messages():
                 try:
                     # Send the request
                     response = requests.post(
-                        "http://traefik/validation-service/api/v1/pos/validate_transaction",
+                        f"{os.getenv('API_PROTOCOL')}://{os.getenv('API_HOST')}:{os.getenv('API_PORT')}/validation-service/api/v1/pos/validate_transaction",
                         headers={"Content-Type": "application/json"},
                         data=transaction_json,
                     )

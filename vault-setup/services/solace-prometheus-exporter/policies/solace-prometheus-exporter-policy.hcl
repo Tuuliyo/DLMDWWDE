@@ -1,4 +1,4 @@
-path "kv/validation-service/*" {
+path "kv/solace-prometheus-exporter/*" {
     capabilities = ["read"]
 }
 
@@ -6,6 +6,6 @@ path "kv/message-broker/config" {
     capabilities = ["read"]
 }
 
-path "kv/message-broker/creds/validation-service" {
+path "kv/message-broker/creds/login" {
     capabilities = ["read"]
 }

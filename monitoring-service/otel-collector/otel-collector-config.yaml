@@ -1,11 +1,11 @@
 receivers:
   solace:
-    broker: message-broker:5672
+    broker: ${env:BROKER_AMQP_HOST}:${env:BROKER_AMQP_PORT}
     max_unacknowledged: 500
     auth:
       sasl_plain:
-        username: telemetry_collector_service
-        password: Telemetry1234!
+        username: ${env:BROKER_OTEL_USERNAME}
+        password: ${env:BROKER_OTEL_PASSWORD}
     queue: queue://#telemetry-otel
     tls:
       insecure: true

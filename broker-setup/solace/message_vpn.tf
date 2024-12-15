@@ -1,5 +1,5 @@
 resource "solacebroker_msg_vpn" "basic_enable" {
-    msg_vpn_name = "default"
+    msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
     alias = "pos-simulation"
     authentication_basic_enabled = true
     authentication_basic_type = "internal"
