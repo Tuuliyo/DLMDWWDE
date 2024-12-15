@@ -3,8 +3,11 @@ from datetime import datetime
 import uuid
 import requests
 from logger_config import setup_logger
+import os
+
 
 logger = setup_logger()
+
 
 def deserialize_message(event: str):
     try:
@@ -56,6 +59,7 @@ def merger(acc1, acc2):
         ),
     }
 
+
 def format_aggregated_event(item):
     key, (window, accumulator) = item
     accumulator["event_id"] = str(uuid.uuid4())
@@ -77,9 +81,15 @@ def format_aggregated_event(item):
 
 
 def send_to_api(aggregated_data):
-    url = "http://traefik/validation-service/api/v1/pos/amount-per-store"
+    url = f"{os.getenv('API_PROTOCOL')}://{os.getenv('API_HOST')}:{os.getenv('API_PORT')}/validation-service/api/v1/pos/amount-per-store"
+
     try:
-        response = requests.post(url, json=aggregated_data)
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=aggregated_data,
+            auth=(os.getenv("API_USERNAME"), os.getenv("API_PASSWORD")),
+        )
         response.raise_for_status()
         logger.info(f"Data sent successfully: {aggregated_data}")
     except requests.exceptions.RequestException as e:

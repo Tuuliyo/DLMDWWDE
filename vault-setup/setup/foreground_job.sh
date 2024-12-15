@@ -7,4 +7,5 @@ CONFIG_DIR="./vault/config"
 echo "Starting Vault server in the foreground..."
 
 vault server -config="$CONFIG_DIR/vault-config.hcl" &
+sleep 5
 sh /vault/setup/init_agent.sh

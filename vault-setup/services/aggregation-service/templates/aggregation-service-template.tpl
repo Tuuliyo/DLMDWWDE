@@ -1,6 +1,8 @@
 API_HOST="{{ with secret "kv/validation-service/config" }}{{ .Data.api_host }}{{ end }}"
 API_PORT="{{ with secret "kv/validation-service/config" }}{{ .Data.api_port }}{{ end }}"
 API_PROTOCOL="{{ with secret "kv/validation-service/config" }}{{ .Data.api_protocol }}{{ end }}"
+API_USERNAME="{{ with secret "kv/validation-service/creds/aggregation-service" }}{{ .Data.username }}{{ end }}"
+API_PASSWORD="{{ with secret "kv/validation-service/creds/aggregation-service" }}{{ .Data.password }}{{ end }}"
 
 BROKER_HEALTH_HOST="{{ with secret "kv/message-broker/config" }}{{ .Data.health_host }}{{ end }}"
 BROKER_HEALTH_PORT="{{ with secret "kv/message-broker/config" }}{{ .Data.health_port }}{{ end }}"

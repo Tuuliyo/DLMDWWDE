@@ -4,7 +4,7 @@ University Project for Data Engineering - POS real-time integration
 Inital Test
 
 # Vault structure for all services and shared configurations
-dev/
+kv/
 ├── vault-service/
 │   ├── config/
 │   │   ├── vault_addr
@@ -54,13 +54,6 @@ dev/
 │       ├── pos-service/
 │       │   ├── username
 │       │   ├── password
-├── solace-prometheus-exporter/
-│   ├── config/
-│   │   ├── listen_addr_host
-│   │   ├── listen_addr_port
-│   │   ├── timeout
-│   │   ├── ssl_verify
-│   │   ├── listen_tls
-├── __aggregation-service/__
-├── __pos-service/__
-├── __otel-collector/__
+├── __aggregation-service/ -> read-only__ 
+├── __pos-service/ -> read-only__
+├── __otel-collector/ -> read-only__

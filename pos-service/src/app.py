@@ -58,11 +58,12 @@ def send_1_million_messages():
 
                 start_time = time.time()  # Start latency timer
                 try:
-                    # Send the request
+                    # Send the request to the validation service
                     response = requests.post(
                         f"{os.getenv('API_PROTOCOL')}://{os.getenv('API_HOST')}:{os.getenv('API_PORT')}/validation-service/api/v1/pos/validate_transaction",
                         headers={"Content-Type": "application/json"},
                         data=transaction_json,
+                        auth=(os.getenv('API_USERNAME'), os.getenv('API_PASSWORD')),  # Basic Auth
                     )
 
                     # Check if the request was successful

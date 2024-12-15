@@ -17,7 +17,7 @@ POS_TRANSACTION_CONFIG = {
 }
 
 # Setup topic root for POS transactions
-POS_TOPIC_PREFIX = os.getenv("POS_TOPIC_PREFIX")
+POS_TOPIC_PREFIX = os.getenv("BROKER_POS_TOPIC_PREFIX")
 
 # Initialize the SolacePublisher for POS transactions
 POS_PUBLISHER = SolacePublisher(config=POS_TRANSACTION_CONFIG)
