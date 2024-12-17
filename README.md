@@ -263,6 +263,8 @@ kv/
 3. Access services:
    - Solace PubSub+: [http://localhost:8088](http://localhost:8088) (admin/admin)
    - Grafana: [http://localhost:3000](http://localhost:3000) (admin/admin)
+     - http://localhost:3000/explore for open telemtry traces
+     - http://localhost:3000/explore/metrics for metrics of the different services
    - Prometheus: [http://localhost:9090](http://localhost:9090)
 
 ---

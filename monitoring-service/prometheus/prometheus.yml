@@ -9,6 +9,9 @@ scrape_configs:
   - job_name: pos-service
     static_configs:
       - targets: ['pos-service:8000']
+  - job_name: 'aggregation-service'
+    static_configs:
+      - targets: ['aggregation-pipeline:8000']
   - job_name: 'traefik'
     static_configs:
       - targets: ['traefik:8080']

@@ -20,6 +20,7 @@ from utils import (
 )
 from solace_source import SolaceDynamicSource
 from api_sink import ApiDynamicSink
+from prometheus_client import start_http_server
 
 # Initialize logger
 logger = setup_logger()
@@ -42,6 +43,7 @@ tracer = trace.get_tracer(__name__)
 
 # Instrument HTTP requests for tracing
 RequestsInstrumentor().instrument()
+start_http_server(8000)
 
 # Define the dataflow
 flow = Dataflow("aggregation-pipeline")
