@@ -68,7 +68,7 @@ def send_1_million_messages():
     tracer = trace.get_tracer(__name__)
 
     try:
-        while count < 50000:
+        while count < 200000: # 1 million transactions in total (5 replicas)
             # Generate a transaction
             transaction = generate_transaction()
             transaction_json = json.dumps(transaction)
