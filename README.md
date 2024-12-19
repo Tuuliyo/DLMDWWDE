@@ -443,14 +443,13 @@ or depending on which docker version you have installed:
    - Grafana: [http://localhost:3000](http://localhost:3000) (admin/admin)
      - http://localhost:3000/explore for open telemetry traces (admin/admin)
      - http://localhost:3000/explore/metrics for metrics of the different services (admin/admin)
-   - Prometheus: [http://localhost:9090](http://localhost:9090)
 
 ### Walkthrough Solace PubSub+
 After the system and all microservices have been successfully started, waiting for the POS services to send all messages and then shut down can feel uneventful. To better understand the architecture and monitor its activity, this section provides a detailed walkthrough of the message broker.
 
 The message broker interface is accessible via [http://localhost:8088](http://localhost:8088). Use the credentials `admin/admin` to log in. After logging in, the first screen displayed is the Message VPN selection:
 
-![Message VPN Selection](.docs/images/solace/default_msg_vpn.png)
+![Message VPN Selection](./docs/images/solace/default_msg_vpn.png)
 
 Here, select the `default` Message VPN, which was set up using Terraform. Once selected, you are directed to the Message VPN overview page, displaying initial configurations.
 
