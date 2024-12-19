@@ -39,17 +39,17 @@ This project implements a real-time, data-intensive backend for Point-of-Sale (P
   - [Setup Instructions](#setup-instructions)
     - [Prerequisites](#prerequisites)
     - [Steps to Run](#steps-to-run)
-  - [Challenges and Lessons Learned](#challenges-and-lessons-learned)
-    - [Challenges](#challenges)
-    - [Lessons Learned](#lessons-learned)
-    - [Steps Required for a Production-Ready Setup \& Future Enhancements](#steps-required-for-a-production-ready-setup--future-enhancements)
-  - [Future Architectural View](#future-architectural-view)
+    - [Walkthrough Solace PubSub+](#walkthrough-solace-pubsub)
+    - [Walkthrough the Grafana](#walkthrough-the-grafana)
+  - [Steps Required for a Production-Ready Setup \& Future Enhancements](#steps-required-for-a-production-ready-setup--future-enhancements)
+    - [Future Architectural View](#future-architectural-view)
       - [1. Store-Level Architecture (Edge Components)](#1-store-level-architecture-edge-components)
-    - [Why Edge Processing in the Store?](#why-edge-processing-in-the-store)
+      - [Why Edge Processing in the Store?](#why-edge-processing-in-the-store)
       - [2. Centralized Architecture (Cloud/Datacenter)](#2-centralized-architecture-clouddatacenter)
       - [3. Monitoring and Observability](#3-monitoring-and-observability)
       - [4. Security Components](#4-security-components)
       - [5. Infrastructure Management](#5-infrastructure-management)
+  - [Other Resources](#other-resources)
   - [Contact](#contact)
 
 ---
@@ -416,7 +416,7 @@ Data Security measures include encryption, access control, and secrets managemen
 ### Prerequisites
 
 - Docker and Docker Compose installed
-- Terraform and Vault CLI (optional for debugging)
+- This project locally
 
 ### Steps to Run
 
@@ -430,41 +430,109 @@ Data Security measures include encryption, access control, and secrets managemen
 2. Start the system:
 
    ```bash
-   docker-compose up --build
+   docker compose up --build -d
+   ```
+or depending on which docker version you have installed:
+
+   ```bash
+   docker-compose up --build -d
    ```
 
 3. Access services:
    - Solace PubSub+: [http://localhost:8088](http://localhost:8088) (admin/admin)
    - Grafana: [http://localhost:3000](http://localhost:3000) (admin/admin)
-     - http://localhost:3000/explore for open telemetry traces
-     - http://localhost:3000/explore/metrics for metrics of the different services
+     - http://localhost:3000/explore for open telemetry traces (admin/admin)
+     - http://localhost:3000/explore/metrics for metrics of the different services (admin/admin)
    - Prometheus: [http://localhost:9090](http://localhost:9090)
 
+### Walkthrough Solace PubSub+
+After the system and all microservices have been successfully started, waiting for the POS services to send all messages and then shut down can feel uneventful. To better understand the architecture and monitor its activity, this section provides a detailed walkthrough of the message broker.
+
+The message broker interface is accessible via [http://localhost:8088](http://localhost:8088). Use the credentials `admin/admin` to log in. After logging in, the first screen displayed is the Message VPN selection:
+
+![Message VPN Selection](.docs/images/solace/default_msg_vpn.png)
+
+Here, select the `default` Message VPN, which was set up using Terraform. Once selected, you are directed to the Message VPN overview page, displaying initial configurations.
+
+![Message VPN Overview](./docs/images/solace/msg_vpn_overview.png)
+
+On the right side of the page, a navigation menu provides access to various features and functions of the Message VPN.
+The navigation menu allows access to the client usernames used by services within the architecture. These usernames are linked to profiles that control permissions and access.
+
+![Client Usernames](./docs/images/solace/client_username.png)
+
+ACL profiles define access permissions for client usernames. They ensure that services only have access to the topics they are authorized to use.
+
+![ACL Profiles](./docs/images/solace/acl_profile.png)
+
+Client profiles further refine the restrictions and capabilities of client usernames.
+
+![Client Profiles](./docs/images/solace/client_profile.png)
+
+One of the most critical sections of the message broker is the queue overview, accessible through the navigation menu under **Queues**. This section displays the queues created for various purposes, such as:
+- POS transactions
+- Telemetry data
+- Store-specific queues for aggregated events
+
+![Queues](./docs/images/solace/queue_overview.png)
+
+Each queue is associated with specific services and topic subscriptions, ensuring data isolation. This prevents unintended exposure of data to unauthorized consumers.
+Terraform also sets up a telemetry profile for collecting data from the broker itself. The telemetry profile can be accessed via the navigation menu under **Telemetry**.
+
+![Telemetry Profile](./docs/images/solace/telemetry_profile.png)
+
+This profile provides insights into the broker's operational metrics, enabling detailed monitoring of the system.
+By navigating these sections, the activity within the message broker becomes transparent, allowing a clear understanding of its configurations and operations.
+
 ---
 
-## Challenges and Lessons Learned
+### Walkthrough the Grafana
 
-### Challenges
+Grafana is used for monitoring and visualizing metrics and traces collected from various services in the architecture. This walkthrough guides through key sections based on the provided images.
+Grafana's **Data Sources** section shows the connections to the monitoring systems. In this setup, Prometheus and Tempo are configured as data sources at provisioning:
 
-- Ensuring service reliability under high transaction volumes.
-- Managing dynamic secret injection in Vault with multiple services.
-- Debugging distributed traces across services.
+- **Prometheus**: Collects metrics from services.
+- **Tempo**: Stores and provides distributed tracing data.
 
-### Lessons Learned
+To view the data sources, navigate to **Connections > Data Sources**:
 
-1. **Technical Skills**:
-   - Advanced usage of Docker Compose and Vault.
-   - Implementing observability using OpenTelemetry, Prometheus, and Grafana.
-   - Writing scalable microservices using Python.
+![Data Sources](./docs/images/grafana/data_sources.png)
 
-2. **Soft Skills**:
-   - Effective debugging of distributed systems.
-   - Time management and task prioritization.
-   - Clear documentation for reproducibility.
+To explore metrics from Prometheus, navigate to **Explore > Metrics**. Here, you can select a data source (default: Prometheus) and filter metrics based on jobs. The list of available jobs includes:
+
+- `aggregation-service`
+- `pos-service`
+- `solace-det`
+- `solace-metrics`
+- `traefik`
+- `validation-service`
+
+For example, selecting the job `aggregation-service` allows you to view its specific metrics:
+
+![Metrics Job Selection](./docs/images/grafana/metrics_job_selection.png)
+
+Recent metrics explorations can also be accessed under **Explore > Metrics**. This helps in revisiting previously queried metrics for deeper analysis or continued monitoring:
+
+![Metrics](./docs/images/grafana/metrics.png)
+
+The **Tempo** data source provides detailed tracing information, helping to analyze how requests flow through the system. Navigate to **Explore** and select a **Search** as query type to analyze. For example, a trace for the `send_transaction` operation shows how requests flow through services such as:
+
+- `pos-service`
+- `validation-service`
+- `aggregation-pipeline`
+- `message-broker`
+
+The trace includes detailed timing information for each step in the request flow:
+
+![Trace Insights](./docs/images/grafana/trace_insights.png)
+
+Under **Explore**, you can filter and explore specific traces by service name or span. For instance, you can narrow down to traces involving `pos-service` or `validation-service` for detailed analysis:
+
+![Traces](./docs/images/grafana/traces.png)
 
 ---
 
-### Steps Required for a Production-Ready Setup & Future Enhancements
+## Steps Required for a Production-Ready Setup & Future Enhancements
 
 This project provides a strong foundation for building a scalable, reliable, and maintainable data engineering system. The current setup demonstrates key principles of real-time data processing, observability, and secure secrets management. However, to transition this system into a production environment, several additional steps are required to ensure operational excellence, security, and scalability:
 1. Kubernetes Deployment
@@ -504,7 +572,7 @@ This project provides a strong foundation for building a scalable, reliable, and
     - Consider the use of PubSub+ on Cloud
     - Or make use of the HA setup of PubSub+ with Docker and Kubernetes
 
-## Future Architectural View
+### Future Architectural View
 
 ![Possible Future High-Level Architecture](./docs/images/future_highlevel_architecture.png)
 
@@ -541,7 +609,7 @@ At the **store level**, services are containerized and managed using **Kubernete
 
 ---
 
-### Why Edge Processing in the Store?
+#### Why Edge Processing in the Store?
 
 The architecture ensures that all critical data processing, validation, and aggregation happen **locally within the store**. This design guarantees that the system remains functional even in scenarios where **internet connectivity is temporarily unavailable**. By processing data at the edge:
 
@@ -555,6 +623,8 @@ The architecture ensures that all critical data processing, validation, and aggr
    Edge data storage, combined with stream processing, ensures that transaction data remains safe and can later synchronize with centralized systems once connectivity is restored.
 
 By utilizing the **Message Broker** (Solace PubSub+) as the sole outbound point, the architecture acts as a bridge between the local edge systems and the centralized platform. This design ensures a seamless transition of validated data from the store to the cloud or central datacenter, without compromising on performance or reliability during network disruptions.
+
+---
 
 #### 2. Centralized Architecture (Cloud/Datacenter)
 The **centralized architecture** processes and consolidates data from all store locations, enabling advanced analytics, storage, and AI/ML applications.
@@ -606,6 +676,22 @@ Security is enforced using HashiCorp Vault for secrets management and credential
   Enables multi-cluster Kubernetes federation for managing distributed stores.
 - **GitLab CI/CD**:  
   Provides automated pipelines for building, testing, and deploying services across edge and centralized environments.  
+
+---
+
+## Other Resources
+
+To gain a better understanding of the validation services and the events being sent within the architecture, you can explore the following resources:
+
+- **OpenAPI Specification:**  
+  [OpenAPI Documentation](./docs/open_api.yml)
+
+- **AsyncAPI Specification:**
+  [AsyncAPI File](./docs/async_api.yml)
+
+__Note:__
+- **Swagger Editor:** Use [Swagger Editor](https://editor-next.swagger.io/) to view and interact with the OpenAPI specification.  
+- **AsyncAPI Studio:** Use [AsyncAPI Studio](https://studio.asyncapi.com/) to explore the AsyncAPI specification.
 
 ---
 
