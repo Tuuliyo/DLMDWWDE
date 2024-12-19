@@ -36,6 +36,8 @@ while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
     sleep $SLEEP_TIME
 done
 
+sleep 10 
+
 # Environment variables setup
 BROKER_PROTOCOL="${BROKER_HTTP_PROTOCOL}"
 BROKER_HOST="${BROKER_HTTP_HOST}"
