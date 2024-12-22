@@ -21,6 +21,7 @@ from utils import (
 from solace_source import SolaceDynamicSource
 from api_sink import ApiDynamicSink
 from prometheus_client import start_http_server
+import os
 
 # Initialize logger
 logger = setup_logger()
@@ -31,7 +32,9 @@ tracer_provider = TracerProvider(resource=resource)
 trace.set_tracer_provider(tracer_provider)
 
 # Configure OTLP exporter for sending spans to the OpenTelemetry Collector
-otlp_exporter = OTLPSpanExporter(endpoint="http://otel-collector:4317", insecure=True)
+otlp_exporter = OTLPSpanExporter(
+    endpoint=f"{os.getenv('OTEL_COLLECTOR_PROTOCOL')}://{os.getenv('OTEL_COLLECTOR_HOST')}:{os.getenv('OTEL_COLLECTOR_PORT')}", insecure=True
+)
 span_processor = BatchSpanProcessor(
     otlp_exporter,
     max_queue_size=1000,

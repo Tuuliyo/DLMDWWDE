@@ -8,3 +8,7 @@ API_PASSWORD="{{ with secret "kv/validation-service/creds/pos-service" }}{{ .Dat
 BROKER_HOST="{{ with secret "kv/message-broker/config" }}{{ .Data.health_host }}{{ end }}"
 BROKER_PORT="{{ with secret "kv/message-broker/config" }}{{ .Data.health_port }}{{ end }}"
 BROKER_PROTOCOL="{{ with secret "kv/message-broker/config" }}{{ .Data.health_protocol }}{{ end }}"
+
+OTEL_COLLECTOR_HOST="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_host }}{{ end }}"
+OTEL_COLLECTOR_PORT="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_port }}{{ end }}"
+OTEL_COLLECTOR_PROTOCOL="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_protocol }}{{ end }}"

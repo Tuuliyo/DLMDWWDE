@@ -15,3 +15,7 @@ BROKER_SMF_PROTOCOL="{{ with secret "kv/message-broker/config" }}{{ .Data.smf_pr
 BROKER_QUEUE_NAME="{{ with secret "kv/message-broker/config/aggregation-service" }}{{ .Data.queue_name }}{{ end }}"
 BROKER_SMF_USERNAME="{{ with secret "kv/message-broker/creds/aggregation-service" }}{{ .Data.username }}{{ end }}"
 BROKER_SMF_PASSWORD="{{ with secret "kv/message-broker/creds/aggregation-service" }}{{ .Data.password }}{{ end }}"
+
+OTEL_COLLECTOR_HOST="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_host }}{{ end }}"
+OTEL_COLLECTOR_PORT="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_port }}{{ end }}"
+OTEL_COLLECTOR_PROTOCOL="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_protocol }}{{ end }}"

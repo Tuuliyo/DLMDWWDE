@@ -5,6 +5,10 @@
 # validation service.
 # ------------------------------------------------------------------------------
 
+path "kv/otel-collector/config" {
+    capabilities = ["read"]
+}
+
 path "kv/message-broker/config" {
     capabilities = ["read"]
 }

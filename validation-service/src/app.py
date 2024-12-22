@@ -13,6 +13,7 @@ from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
 from routes import transaction, health, amount_per_store
 from prometheus_fastapi_instrumentator import Instrumentator
 from logger_config import setup_logger
+import os
 
 # Initialize logger
 logger = setup_logger()
@@ -35,7 +36,7 @@ def init_tracing():
     trace.set_tracer_provider(TracerProvider(resource=resource))
 
     otlp_exporter = OTLPSpanExporter(
-        endpoint="http://otel-collector:4317", insecure=True
+        endpoint=f"{os.getenv('OTEL_COLLECTOR_PROTOCOL')}://{os.getenv('OTEL_COLLECTOR_HOST')}:{os.getenv('OTEL_COLLECTOR_PORT')}", insecure=True
     )
     span_processor = BatchSpanProcessor(
         otlp_exporter,

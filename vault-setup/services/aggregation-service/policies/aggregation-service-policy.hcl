@@ -23,3 +23,7 @@ path "kv/message-broker/creds/aggregation-service" {
 path "kv/validation-service/creds/aggregation-service" {
     capabilities = ["read"]
 }
+
+path "kv/otel-collector/config" {
+    capabilities = ["read"]
+}

@@ -38,7 +38,7 @@ def init_tracing():
 
     # Configure the OTLP exporter
     otlp_exporter = OTLPSpanExporter(
-        endpoint="http://otel-collector:4317", insecure=True
+        endpoint=f"{os.getenv('OTEL_COLLECTOR_PROTOCOL')}://{os.getenv('OTEL_COLLECTOR_HOST')}:{os.getenv('OTEL_COLLECTOR_PORT')}", insecure=True
     )
     span_processor = BatchSpanProcessor(
         otlp_exporter,

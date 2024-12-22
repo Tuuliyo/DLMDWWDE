@@ -143,7 +143,7 @@ flowchart TD
     kv --> message_broker["message-broker/"]
     message_broker --> mb_config["config/"]
     message_broker --> mb_creds["creds/"]
-    
+
     mb_config --> http_host["http_host"]
     mb_config --> http_port["http_port"]
     mb_config --> http_protocol["http_protocol"]
@@ -157,7 +157,8 @@ flowchart TD
     mb_config --> amqp_port["amqp_port"]
     mb_config --> msg_vpn["msg_vpn"]
     mb_config --> pos_topic_prefix["pos_topic_prefix"]
-    mb_config --> agg_queue["aggregation-service/queue_name"]
+    mb_config --> agg_queue["aggregation-service/"]
+    agg_queue --> queue_name["queue_name"]
 
     mb_creds --> login["login/"]
     login --> login_user["username"]
@@ -166,6 +167,11 @@ flowchart TD
     mb_creds --> otel["otel/"]
     otel --> otel_user["username"]
 
+    kv --> otel_collector["otel-collector/"]
+    otel_collector --> otel_config["config/"]
+    otel_config --> otel_protocol["otel_protocol"]
+    otel_config --> otel_host["otel_host"]
+    otel_config --> otel_port["otel_port"]
 ```
 
 ---
@@ -221,7 +227,7 @@ flowchart TD
 - **Role in the Architecture:**  
   - **Data Security:** Safely stores passwords and tokens and enforces role-based access control.  
   - **Data Isolation:** Mounts secrets at runtime only into the respective containers.  
-  - **Automation:** Uses Vault Agents and AppRoles to dynamically provision secrets for each service.
+  - **Automation:** Uses Vault Agents and AppRoles to dynamically provision secrets for each service over bash scripts at startup.
 
 ### 7. Monitoring Services (Prometheus, Grafana, Tempo, OpenTelemetry Collector)
 - **Functionality:**  
@@ -476,6 +482,7 @@ One of the most critical sections of the message broker is the queue overview, a
 ![Queues](./docs/images/solace/queue_overview.png)
 
 Each queue is associated with specific services and topic subscriptions, ensuring data isolation. This prevents unintended exposure of data to unauthorized consumers.
+The store specific queues are listed. Over time the aggregated events are inserted in the corresponding store queue. If this happens the queue shows __queued messages__.
 Terraform also sets up a telemetry profile for collecting data from the broker itself. The telemetry profile can be accessed via the navigation menu under **Telemetry**.
 
 ![Telemetry Profile](./docs/images/solace/telemetry_profile.png)

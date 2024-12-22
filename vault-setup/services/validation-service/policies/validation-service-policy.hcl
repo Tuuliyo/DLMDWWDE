@@ -6,6 +6,10 @@
 # credentials within the message broker.
 # ------------------------------------------------------------------------------
 
+path "kv/otel-collector/config" {
+    capabilities = ["read"]
+}
+
 path "kv/validation-service/*" {
     capabilities = ["read"]
 }
