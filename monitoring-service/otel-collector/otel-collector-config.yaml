@@ -20,7 +20,7 @@ receivers:
 
 processors:
   batch:
-    timeout: 5s
+    timeout: 10s
 
 exporters:
   debug:
@@ -32,11 +32,12 @@ exporters:
       insecure_skip_verify: true
     sending_queue:
       enabled: true
-      queue_size: 5000  # Adjust queue size for better control of memory usage
+      queue_size: 100000
     retry_on_failure:
       enabled: true
-      max_interval: 30s
-      max_elapsed_time: 300s
+      initial_interval: 2s
+      max_interval: 15s
+      max_elapsed_time: 120s
   prometheus:
     endpoint: 0.0.0.0:9464
 

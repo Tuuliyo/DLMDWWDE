@@ -37,6 +37,8 @@ This project implements a real-time, data-intensive backend for point-of-sale (P
     - [3. Data Security](#3-data-security)
     - [Summary of Key Measures](#summary-of-key-measures)
   - [Setup Instructions](#setup-instructions)
+    - [Summary of Resource Allocation in Docker Desktop](#summary-of-resource-allocation-in-docker-desktop)
+      - [Details](#details)
     - [Prerequisites](#prerequisites)
     - [Steps to Run](#steps-to-run)
     - [Walkthrough Solace PubSub+](#walkthrough-solace-pubsub)
@@ -415,6 +417,29 @@ Data Security measures include encryption, access control, and secrets managemen
 
 ## Setup Instructions
 
+### Summary of Resource Allocation in Docker Desktop
+
+To successfully run the project locally with the best performance, the following resource allocation is recommended:
+
+| **Resource Type** | **Recommended Allocation** | **Purpose**                                                            |
+|-------------------|----------------------------|------------------------------------------------------------------------|
+| **CPU**           | 10 CPUs                  | Parallel execution of services and real-time data processing           |
+| **Memory**        | 10 GB RAM                  | In-memory operations for microservices and monitoring tools            |
+| **Swap**          | 3 GB                       | Support for memory overflows during peak loads                         |
+| **Disk Space**    | 128 GB                     | Persistent message storage, logs, traces, and Docker resources         |
+
+#### Details
+
+- **CPU (10 CPUs):** Required for the efficient execution of multiple replicated microservices like the POS Service and Validation Service. Ensures smooth operation of real-time data processing components and monitoring tools.
+- **Memory (10 GB):** Allocated to support memory-intensive operations such as message validation, aggregation, and in-memory queue management.
+- **Swap (3 GB):** Acts as virtual memory to enhance stability during high loads or memory overflows.
+- **Disk Space (128 GB):**
+  - Persistent storage for the Message Broker to queue messages during downtime.
+  - Log files, trace data, and monitoring data collected by Prometheus and Tempo.
+  - Docker volumes and image storage.
+
+---
+
 ### Prerequisites
 
 - Docker and Docker Compose installed
@@ -445,6 +470,8 @@ or depending on which docker cli version you have installed:
    - Grafana: [http://localhost:3000](http://localhost:3000) (admin/admin)
      - http://localhost:3000/explore for open telemetry traces (admin/admin)
      - http://localhost:3000/explore/metrics for metrics of the different services (admin/admin)
+
+---
 
 ### Walkthrough Solace PubSub+
 After the system and all microservices have been successfully started, waiting for the POS services to send all messages and then shut down can feel uneventful. To better understand the architecture and monitor its activity, this section provides a detailed walkthrough of the message broker.
