@@ -1,79 +1,21 @@
-version: "3.8"
+# ------------------------------------------------------------------------------
+# Docker Compose Configuration
+# This file defines a multi-service environment for a data engineering project.
+# It includes services for message brokering, application deployment, monitoring,
+# and secrets management, along with dependencies and network configurations.
+# ------------------------------------------------------------------------------
 
 services:
-  pos-service:
-    build:
-      context: ./pos-service
-    deploy:
-      replicas: 5
-    depends_on:
-      - traefik
-      - validation-service
-      - message-broker
-      - grafana
-      - tempo
-      - otel-collector
-      - prometheus
-    volumes:
-      - ./pos-service/src:/app/src
-      - ./pos-service/healthcheck.sh:/app/healthcheck.sh
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: bash /app/healthcheck.sh
-    restart: no
-    networks:
-      - services-network
-
-  validation-service:
-    build:
-      context: ./validation-service
-    deploy:
-      replicas: 3
-    depends_on:
-      - message-broker
-      - grafana
-      - tempo
-      - otel-collector
-      - prometheus
-    volumes:
-      - ./validation-service/src:/app/src
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.validation-service.rule=PathPrefix(`/validation-service`)"
-      - "traefik.http.services.validation-service.loadbalancer.server.port=8000"
-    restart: always
-    networks:
-      - services-network
-
-  traefik:
-    image: traefik:v2.5
-    container_name: traefik-lb
-    depends_on:
-      - validation-service
-      - message-broker
-      - grafana
-      - tempo
-      - otel-collector
-      - prometheus
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-    ports:
-      - "80:80"
-      - "8080:8080"
-    networks:
-      - services-network
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-
+  # Message broker service using Solace PubSub+
   message-broker:
     image: solace/solace-pubsub-standard:latest
     container_name: solace-pubsub-broker
     volumes:
       - "storage-group:/var/lib/solace"
+    environment:
+      - username_admin_globalaccesslevel=admin
+      - username_admin_password=admin
+      - system_scaling_maxconnectioncount=100
     shm_size: 1g
     ulimits:
       core: -1
@@ -83,7 +25,7 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        max_attempts: 1
+        max_attempts: 3
     ports:
       - "8008:8008"
       - "1443:1443"
@@ -101,51 +43,170 @@ services:
       - "55003:55003"
       - "55443:55443"
       - "2222:2222"
-    environment:
-      - username_admin_globalaccesslevel=admin
-      - username_admin_password=admin
-      - system_scaling_maxconnectioncount=100
-    healthcheck:
-      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8088"]
-      interval: 30s
-      retries: 5
-      start_period: 20s
-      timeout: 10s
     networks:
       - services-network
 
+  # Terraform service for infrastructure management
+  terraform:
+    image: hashicorp/terraform:latest
+    container_name: terraform
+    volumes:
+      - ./broker-setup/solace:/workspace
+      - ./broker-setup/scripts/setup.sh:/setup/setup.sh
+      - ./vault-setup/services/message-broker/env/.env:/vault-secrets/.env:ro
+    working_dir: /workspace
+    entrypoint:
+      ["sh", "-c", "source /vault-secrets/.env && sh /setup/setup.sh"]
+    environment:
+      - ENV_FILE_PATH=/vault-secrets/.env
+    depends_on:
+      vault:
+        condition: service_healthy
+    networks:
+      - services-network
+
+  # Point of Sale (POS) service
+  pos-service:
+    build:
+      context: ./pos-service
+    deploy:
+      replicas: 5
+    depends_on:
+      terraform:
+        condition: service_completed_successfully
+      vault:
+        condition: service_started
+    volumes:
+      - ./pos-service/src:/app/src
+      - ./pos-service/healthcheck.sh:/app/healthcheck.sh
+      - ./vault-setup/services/pos-service/env/.env:/vault-secrets/.env:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.pos-service.loadbalancer.server.port=8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENV_FILE_PATH=/vault-secrets/.env
+    command: bash /app/healthcheck.sh
+    restart: "no"
+    networks:
+      - services-network
+
+  # Validation service
+  validation-service:
+    build:
+      context: ./validation-service
+    deploy:
+      replicas: 3
+    depends_on:
+      terraform:
+        condition: service_completed_successfully
+    volumes:
+      - ./validation-service/src:/app/src
+      - ./validation-service/healthcheck.sh:/app/healthcheck.sh
+      - ./vault-setup/services/validation-service/env/.env:/vault-secrets/.env:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.validation-service.rule=PathPrefix(`/validation-service`)"
+      - "traefik.http.services.validation-service.loadbalancer.server.port=8000"
+    environment:
+      - ENV_FILE_PATH=/vault-secrets/.env
+    command: bash /app/healthcheck.sh
+    restart: always
+    networks:
+      - services-network
+
+  # Traefik load balancer service
+  traefik:
+    image: traefik:v3.2.3
+    container_name: traefik-lb
+    depends_on:
+      terraform:
+        condition: service_completed_successfully
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
+    labels:
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    networks:
+      - services-network
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  # Aggregation pipeline service
   aggregation-pipeline:
     build:
       context: ./aggregation-pipeline
     depends_on:
-      - message-broker
-      - grafana
-      - tempo
-      - otel-collector
-      - prometheus
+      terraform:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.aggregation-pipeline.loadbalancer.server.port=8000"
     volumes:
       - ./aggregation-pipeline/src:/app/src
+      - ./aggregation-pipeline/healthcheck.sh:/app/healthcheck.sh
+      - ./vault-setup/services/aggregation-service/env/.env:/vault-secrets/.env:ro
+    environment:
+      - ENV_FILE_PATH=/vault-secrets/.env
+    command: bash /app/healthcheck.sh
     networks:
       - services-network
 
+  # Solace Prometheus exporter for monitoring
+  solace-prometheus-exporter:
+    image: solacecommunity/solace-prometheus-exporter:latest
+    container_name: solace-prometheus-exporter
+    platform: linux/amd64
+    environment: # No dynamic configuration available for this exporter
+      - SOLACE_USERNAME=admin
+      - SOLACE_PASSWORD=admin
+      - SOLACE_DEFAULT_VPN=default
+      - SOLACE_SCRAPE_URI=http://message-broker:8080
+      - SOLACE_LISTEN_ADDR=0.0.0.0:9628
+      - SOLACE_TIMEOUT=5s
+      - SOLACE_SSL_VERIFY=false
+      - SOLACE_LISTEN_TLS=false
+    ports:
+      - "9628:9628"
+    depends_on:
+      terraform:
+        condition: service_completed_successfully
+    networks:
+      - services-network
+
+  # OpenTelemetry collector for monitoring
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    build:
+      context: ./monitoring-service/otel-collector # Own Dockerfile for custom configuration and dynamic secrets
+      dockerfile: Dockerfile
     container_name: otel-collector
     ports:
-      - "4318:4318"    # OTLP gRPC
-      - "4317:4317"    # OTLP HTTP
-      - "9464:9464"    # Prometheus metrics
-      - "55681:55681"  # OTLP metrics
+      - "4318:4318"
+      - "4317:4317"
+      - "9464:9464"
+      - "55681:55681"
     volumes:
       - ./monitoring-service/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    command: ["--config", "/etc/otel-collector-config.yaml"]
+      - ./vault-setup/services/otel-collector/env/.env:/vault-secrets/.env
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "export $(grep -v '^#' /vault-secrets/.env | xargs) &&
+      /otelcol-contrib --config /etc/otel-collector-config.yaml"
     depends_on:
-      - message-broker
+      terraform:
+        condition: service_completed_successfully
+      vault:
+        condition: service_started
     networks:
       - services-network
 
+  # Prometheus service for monitoring
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:main
     container_name: prometheus
     depends_on:
       - otel-collector
@@ -157,34 +218,64 @@ services:
     networks:
       - services-network
 
+  # Grafana service for monitoring dashboards
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
       - "3000:3000"
+    volumes:
+      - ./monitoring-service/grafana/provisioning/datasources/:/etc/grafana/provisioning/datasources/
     networks:
       - services-network
     depends_on:
       - prometheus
       - otel-collector
+      - tempo
 
+  # Tempo service for distributed tracing
   tempo:
     image: grafana/tempo:latest
     container_name: tempo
     depends_on:
       - otel-collector
       - prometheus
-      - grafana
     ports:
-      - "14268:14268"  # HTTP receiver for traces
-      - "43172:4317"    # OTLP gRPC receiver
-      - "3200:3200"    # Tempo's HTTP API
+      - "14268:14268"
+      - "43172:4317"
+      - "3200:3200"
     volumes:
-      - ./monitoring-service/tempo/tempo-data:/var/tempo/traces  # Local storage for traces
-      - ./monitoring-service/tempo/tempo-config.yaml:/etc/tempo-config.yaml  # Custom configuration file
+      - ./monitoring-service/tempo/tempo-data:/var/tempo/traces
+      - ./monitoring-service/tempo/tempo-config.yaml:/etc/tempo-config.yaml
     command: ["-config.file=/etc/tempo-config.yaml"]
     networks:
       - services-network
+
+  # Vault service for secrets management
+  vault:
+    build:
+      context: ./vault-setup
+      dockerfile: Dockerfile
+    container_name: vault
+    volumes:
+      - ./vault-setup/config:/vault/config
+      - ./vault-setup/data:/vault/data
+      - ./vault-setup/setup:/vault/setup
+      - ./vault-setup/services:/vault/services
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_API_ADDR=http://0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    command: sh /vault/setup/foreground_job.sh
+    restart: unless-stopped
+    networks:
+      - services-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8200/v1/sys/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   storage-group:

@@ -1,11 +1,11 @@
 receivers:
   solace:
-    broker: message-broker:5672
+    broker: ${env:BROKER_AMQP_HOST}:${env:BROKER_AMQP_PORT}
     max_unacknowledged: 500
     auth:
       sasl_plain:
-        username: otel-collector
-        password: Otel1234!
+        username: ${env:BROKER_OTEL_USERNAME}
+        password: ${env:BROKER_OTEL_PASSWORD}
     queue: queue://#telemetry-otel
     tls:
       insecure: true
@@ -17,9 +17,10 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
+
 processors:
   batch:
-    timeout: 5s
+    timeout: 10s
 
 exporters:
   debug:
@@ -29,6 +30,14 @@ exporters:
     tls:
       insecure: true
       insecure_skip_verify: true
+    sending_queue:
+      enabled: true
+      queue_size: 100000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 2s
+      max_interval: 15s
+      max_elapsed_time: 120s
   prometheus:
     endpoint: 0.0.0.0:9464
 
@@ -40,7 +49,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp, solace]
-      processors: []
+      processors: [batch]
       exporters: [debug, otlp]
     metrics:
       receivers: [otlp]

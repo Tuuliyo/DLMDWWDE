@@ -1,0 +1,212 @@
+asyncapi: 3.0.0
+info:
+  title: POS Transaction System
+  version: 1.0.0
+  description: >
+    This AsyncAPI specification describes the POS transaction system,  which
+    handles transactions and aggregated events.
+servers:
+  production:
+    host: broker.example.com
+    protocol: smf
+    description: Solace PubSub+ broker for the POS transaction system.
+channels:
+  'sale/pos/transaction/{store_id}/{cashier_id}/{payment_method}/{payment_status}/{timestamp}/{transaction_id}/{total_amount}/{receipt_id}/{customer_id}':
+    address: >-
+      sale/pos/transaction/{store_id}/{cashier_id}/{payment_method}/{payment_status}/{timestamp}/{transaction_id}/{total_amount}/{receipt_id}/{customer_id}
+    messages:
+      publishTransaction.message:
+        $ref: '#/components/messages/TransactionMessage'
+      subscribeTransaction.message:
+        $ref: '#/components/messages/TransactionMessage'
+    description: Channel for broadcasting detailed transaction events.
+    parameters:
+      store_id:
+        description: Identifier of the store (STORE_01 to STORE_10).
+      cashier_id:
+        description: Identifier of the cashier (CASHIER_1 to CASHIER_8).
+      payment_method:
+        enum:
+          - credit_card
+          - cash
+          - debit_card
+          - voucher
+        description: 'Payment method used (credit_card, cash, debit_card, voucher).'
+      payment_status:
+        enum:
+          - success
+          - failed
+        description: Payment status of the transaction (success or failed).
+      timestamp:
+        description: ISO 8601 timestamp of the transaction.
+      transaction_id:
+        description: Unique transaction identifier (UUID format).
+      total_amount:
+        description: Total amount of the transaction.
+      receipt_id:
+        description: Identifier for the receipt.
+      customer_id:
+        description: Identifier for the customer.
+  'sale/pos/aggregations/{store_id}/{event_id}/{total_amount}':
+    address: 'sale/pos/aggregations/{store_id}/{event_id}/{total_amount}'
+    messages:
+      publishAggregatedEvent.message:
+        $ref: '#/components/messages/AggregatedEventMessage'
+      subscribeAggregatedEvent.message:
+        $ref: '#/components/messages/AggregatedEventMessage'
+    description: Channel for publishing and subscribing to aggregated transaction events.
+    parameters:
+      store_id:
+        description: Identifier of the store.
+      event_id:
+        description: Unique identifier for the aggregated event (UUID format).
+      total_amount:
+        description: Total aggregated amount for the event.
+operations:
+  publishTransaction:
+    action: receive
+    channel:
+      $ref: >-
+        #/channels/sale~1pos~1transaction~1{store_id}~1{cashier_id}~1{payment_method}~1{payment_status}~1{timestamp}~1{transaction_id}~1{total_amount}~1{receipt_id}~1{customer_id}
+    summary: Broadcast a new POS transaction event.
+    messages:
+      - $ref: >-
+          #/channels/sale~1pos~1transaction~1{store_id}~1{cashier_id}~1{payment_method}~1{payment_status}~1{timestamp}~1{transaction_id}~1{total_amount}~1{receipt_id}~1{customer_id}/messages/publishTransaction.message
+  subscribeTransaction:
+    action: send
+    channel:
+      $ref: >-
+        #/channels/sale~1pos~1transaction~1{store_id}~1{cashier_id}~1{payment_method}~1{payment_status}~1{timestamp}~1{transaction_id}~1{total_amount}~1{receipt_id}~1{customer_id}
+    summary: Subscribe to detailed transaction events.
+    messages:
+      - $ref: >-
+          #/channels/sale~1pos~1transaction~1{store_id}~1{cashier_id}~1{payment_method}~1{payment_status}~1{timestamp}~1{transaction_id}~1{total_amount}~1{receipt_id}~1{customer_id}/messages/subscribeTransaction.message
+  publishAggregatedEvent:
+    action: receive
+    channel:
+      $ref: >-
+        #/channels/sale~1pos~1aggregations~1{store_id}~1{event_id}~1{total_amount}
+    summary: Publish an aggregated transaction event.
+    messages:
+      - $ref: >-
+          #/channels/sale~1pos~1aggregations~1{store_id}~1{event_id}~1{total_amount}/messages/publishAggregatedEvent.message
+  subscribeAggregatedEvent:
+    action: send
+    channel:
+      $ref: >-
+        #/channels/sale~1pos~1aggregations~1{store_id}~1{event_id}~1{total_amount}
+    summary: Subscribe to aggregated transaction events.
+    messages:
+      - $ref: >-
+          #/channels/sale~1pos~1aggregations~1{store_id}~1{event_id}~1{total_amount}/messages/subscribeAggregatedEvent.message
+components:
+  messages:
+    TransactionMessage:
+      summary: Transaction details for a point-of-sale event.
+      payload:
+        $ref: '#/components/schemas/Transaction'
+    AggregatedEventMessage:
+      summary: Aggregated transaction event details.
+      payload:
+        $ref: '#/components/schemas/AggregatedEvent'
+  schemas:
+    Item:
+      type: object
+      description: Represents an individual item in a transaction.
+      properties:
+        item_id:
+          type: string
+          description: Unique identifier for the item.
+        name:
+          type: string
+          description: Name of the item.
+        quantity:
+          type: integer
+          description: 'Quantity of the item, must be positive.'
+        price_per_unit:
+          type: number
+          description: 'Price per unit of the item, must be positive.'
+        total_price:
+          type: number
+          description: 'Total price for the item, must be positive.'
+    Receipt:
+      type: object
+      description: Represents a receipt associated with a transaction.
+      properties:
+        receipt_id:
+          type: string
+          description: Unique receipt identifier.
+        date:
+          type: string
+          format: date-time
+          description: Date and time the receipt was generated (ISO 8601 format).
+        total_amount:
+          type: number
+          description: 'Total amount for the receipt, must be positive.'
+        payment_method:
+          type: string
+          description: Payment method used for the transaction.
+        transaction_id:
+          type: string
+          description: Identifier for the transaction associated with the receipt.
+    Transaction:
+      type: object
+      description: Represents a point-of-sale (POS) transaction.
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+          description: Unique transaction identifier (UUID format).
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the transaction in ISO 8601 format.
+        store_id:
+          type: string
+          description: 'Store identifier, must be one of STORE_01 to STORE_10.'
+        cashier_id:
+          type: string
+          description: 'Cashier identifier, must be one of CASHIER_1 to CASHIER_8.'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        total_amount:
+          type: number
+          description: 'Total amount of the transaction, must be positive.'
+        payment_method:
+          type: string
+          description: 'Payment method used, one of: credit_card, cash, debit_card, voucher.'
+        payment_status:
+          type: string
+          description: 'Payment status of the transaction, one of: success, failed.'
+        customer_id:
+          type: string
+          description: Customer identifier for the transaction.
+        loyalty_points_earned:
+          type: integer
+          description: 'Number of loyalty points earned, must be non-negative.'
+        receipt:
+          $ref: '#/components/schemas/Receipt'
+    AggregatedEvent:
+      type: object
+      description: A data model representing an aggregated event in a transaction system.
+      properties:
+        total_amount:
+          type: number
+          description: 'Total aggregated amount, must be positive.'
+        event_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the event (UUID format).
+        store_id:
+          type: string
+          description: Identifier for the store.
+        begin_stream_aggregator:
+          type: string
+          format: date-time
+          description: Start timestamp of the aggregation period.
+        end_stream_aggregator:
+          type: string
+          format: date-time
+          description: End timestamp of the aggregation period.

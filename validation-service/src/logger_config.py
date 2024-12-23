@@ -1,27 +1,36 @@
+import os
 import logging
 
-# Create and configure the logger
-logger = logging.getLogger("pos-service")
-logger.setLevel(logging.INFO)
+def setup_logger():
+    """
+    Configures and returns a logger for the validation service.
 
-# Create a file handler to write logs to a file
-file_handler = logging.FileHandler("logs/api_logs.log")
-file_handler.setLevel(logging.INFO)
+    - Ensures a directory for log files exists at `/app/logs`.
+    - Logs messages to both a file (`api_logs.log`) and the console.
+    - Uses the ERROR logging level for minimal output in production.
 
-# Create a formatter and attach it to the file handler
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(formatter)
+    Returns:
+        logging.Logger: A configured logger instance.
+    """
+    logger = logging.getLogger("validation-service")
+    logger.setLevel(logging.ERROR)
 
-# Add the file handler to the logger
-logger.addHandler(file_handler)
+    # Ensure the logs directory exists
+    log_dir = "/app/logs"
+    os.makedirs(log_dir, exist_ok=True)
 
-# You can also configure console logging if needed
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+    # File handler for logging to a file
+    log_file_path = os.path.join(log_dir, "api_logs.log")
+    file_handler = logging.FileHandler(log_file_path)
+    file_handler.setLevel(logging.ERROR)
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
+    # Console handler for logging to the terminal
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
-# Return the configured logger
-def get_logger():
     return logger

@@ -1,0 +1,21 @@
+API_HOST="{{ with secret "kv/validation-service/config" }}{{ .Data.api_host }}{{ end }}"
+API_PORT="{{ with secret "kv/validation-service/config" }}{{ .Data.api_port }}{{ end }}"
+API_PROTOCOL="{{ with secret "kv/validation-service/config" }}{{ .Data.api_protocol }}{{ end }}"
+API_USERNAME="{{ with secret "kv/validation-service/creds/aggregation-service" }}{{ .Data.username }}{{ end }}"
+API_PASSWORD="{{ with secret "kv/validation-service/creds/aggregation-service" }}{{ .Data.password }}{{ end }}"
+
+BROKER_HEALTH_HOST="{{ with secret "kv/message-broker/config" }}{{ .Data.health_host }}{{ end }}"
+BROKER_HEALTH_PORT="{{ with secret "kv/message-broker/config" }}{{ .Data.health_port }}{{ end }}"
+BROKER_HEALTH_PROTOCOL="{{ with secret "kv/message-broker/config" }}{{ .Data.health_protocol }}{{ end }}"
+BROKER_MSG_VPN="{{ with secret "kv/message-broker/config" }}{{ .Data.msg_vpn }}{{ end }}"
+BROKER_SMF_HOST="{{ with secret "kv/message-broker/config" }}{{ .Data.smf_host }}{{ end }}"
+BROKER_SMF_PORT="{{ with secret "kv/message-broker/config" }}{{ .Data.smf_port }}{{ end }}"
+BROKER_SMF_PROTOCOL="{{ with secret "kv/message-broker/config" }}{{ .Data.smf_protocol }}{{ end }}"
+
+BROKER_QUEUE_NAME="{{ with secret "kv/message-broker/config/aggregation-service" }}{{ .Data.queue_name }}{{ end }}"
+BROKER_SMF_USERNAME="{{ with secret "kv/message-broker/creds/aggregation-service" }}{{ .Data.username }}{{ end }}"
+BROKER_SMF_PASSWORD="{{ with secret "kv/message-broker/creds/aggregation-service" }}{{ .Data.password }}{{ end }}"
+
+OTEL_COLLECTOR_HOST="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_host }}{{ end }}"
+OTEL_COLLECTOR_PORT="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_port }}{{ end }}"
+OTEL_COLLECTOR_PROTOCOL="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_protocol }}{{ end }}"

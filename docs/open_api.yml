@@ -1,0 +1,374 @@
+openapi: 3.1.0
+info:
+  title: Validation Service
+  description: Service to validate events sent to the message broker
+  version: '1.0'
+servers:
+  - url: /validation-service
+paths:
+  /api/v1/pos/validate_transaction:
+    post:
+      tags:
+        - Validation
+      summary: Validate Transaction
+      description: |-
+        Endpoint to validate a point-of-sale (POS) transaction.
+
+        This endpoint:
+        - Validates the incoming transaction data.
+        - Logs the transaction details and the authenticated username.
+        - Adds a background task to correct the transaction if necessary.
+        - Traces the operation using OpenTelemetry for observability.
+
+        Args:
+            transaction (Transaction): The transaction object to be validated.
+            background_tasks (BackgroundTasks): FastAPI's background task manager to handle asynchronous tasks.
+            username (str): Authenticated username extracted via Basic Auth.
+
+        Returns:
+            dict: A response dictionary containing:
+                - `status` (str): Status of the validation process.
+                - `transaction_id` (str): The unique identifier of the transaction.
+                - `message` (str): A success message.
+
+        Raises:
+            Exception: If an error occurs during validation, the exception is logged and re-raised.
+
+        OpenTelemetry Attributes:
+            - `transaction.id`: The unique identifier for the transaction.
+            - `transaction.store_id`: The store identifier associated with the transaction.
+      operationId: validate_transaction_api_v1_pos_validate_transaction_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transaction'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBasic: []
+  /api/v1/health:
+    get:
+      tags:
+        - Health
+      summary: Health Check
+      description: |-
+        Health check endpoint to verify the application is running.
+
+        This endpoint:
+        - Confirms that the application is healthy and operational.
+        - Logs each access to the health check endpoint for monitoring.
+
+        Returns:
+            dict: A response dictionary containing the health status and a message.
+                - `status` (str): "ok" indicating the application is running.
+                - `message` (str): A detailed message confirming the application's health.
+      operationId: health_check_api_v1_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/v1/pos/amount-per-store:
+    post:
+      tags:
+        - Aggregations
+      summary: Amount Per Store
+      description: |-
+        Endpoint to process aggregated data from a Flink job.
+
+        This endpoint:
+        - Validates the incoming aggregated event data.
+        - Logs the received data and the authenticated username.
+        - Adds a background task to send the aggregations for further processing.
+        - Traces the operation using OpenTelemetry for observability.
+
+        Args:
+            aggregated_event (AggregatedEvent): The aggregated data object received from the Flink job.
+            background_tasks (BackgroundTasks): FastAPI's background task manager for running tasks asynchronously.
+            username (str): Authenticated username extracted via Basic Auth.
+
+        Returns:
+            dict: A response dictionary with a success message.
+
+        Raises:
+            Exception: If an error occurs during processing, the exception is logged and re-raised.
+
+        OpenTelemetry Attributes:
+            - `event.id`: The unique identifier for the aggregated event.
+            - `event.store_id`: The store identifier associated with the aggregated event.
+      operationId: amount_per_store_api_v1_pos_amount_per_store_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AggregatedEvent'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBasic: []
+  /metrics:
+    get:
+      summary: Metrics
+      description: Endpoint that serves Prometheus metrics.
+      operationId: metrics_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    AggregatedEvent:
+      properties:
+        total_amount:
+          type: number
+          title: Total Amount
+          description: Total aggregated amount, must be positive
+        event_id:
+          type: string
+          format: uuid
+          title: Event Id
+          description: Unique identifier for the event (UUID format)
+        store_id:
+          type: string
+          title: Store Id
+          description: Identifier for the store
+        begin_stream_aggregator:
+          type: string
+          title: Begin Stream Aggregator
+          description: Start timestamp of the aggregation period
+        end_stream_aggregator:
+          type: string
+          title: End Stream Aggregator
+          description: End timestamp of the aggregation period
+      type: object
+      required:
+        - total_amount
+        - event_id
+        - store_id
+        - begin_stream_aggregator
+        - end_stream_aggregator
+      title: AggregatedEvent
+      description: |-
+        A data model representing an aggregated event in a transaction system.
+
+        Attributes:
+            total_amount (float): The total aggregated amount. Must be positive.
+            event_id (UUID): A unique identifier for the event in UUID format.
+            store_id (str): The identifier of the store where the transaction occurred.
+            begin_stream_aggregator (str): The start timestamp of the aggregation period in ISO 8601 format.
+            end_stream_aggregator (str): The end timestamp of the aggregation period in ISO 8601 format.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Item:
+      properties:
+        item_id:
+          type: string
+          title: Item Id
+          description: Unique identifier for the item
+        name:
+          type: string
+          title: Name
+          description: Name of the item
+        quantity:
+          type: integer
+          title: Quantity
+          description: Quantity of the item, must be positive
+        price_per_unit:
+          type: number
+          title: Price Per Unit
+          description: Price per unit of the item, must be positive
+        total_price:
+          type: number
+          title: Total Price
+          description: Total price for the item, must be positive
+      type: object
+      required:
+        - item_id
+        - name
+        - quantity
+        - price_per_unit
+        - total_price
+      title: Item
+      description: |-
+        Represents an individual item in a transaction.
+
+        Attributes:
+            item_id (str): Unique identifier for the item.
+            name (str): Name of the item.
+            quantity (int): Quantity of the item, must be positive.
+            price_per_unit (float): Price per unit of the item, must be positive.
+            total_price (float): Total price for the item, must be positive.
+    Receipt:
+      properties:
+        receipt_id:
+          type: string
+          title: Receipt Id
+          description: Unique receipt identifier
+        date:
+          type: string
+          title: Date
+          description: Date and time the receipt was generated
+        total_amount:
+          type: number
+          title: Total Amount
+          description: Total amount for the receipt, must be positive
+        payment_method:
+          type: string
+          title: Payment Method
+          description: Method of payment used for the transaction
+        transaction_id:
+          type: string
+          title: Transaction Id
+          description: Transaction identifier associated with the receipt
+      type: object
+      required:
+        - receipt_id
+        - date
+        - total_amount
+        - payment_method
+        - transaction_id
+      title: Receipt
+      description: |-
+        Represents a receipt associated with a transaction.
+
+        Attributes:
+            receipt_id (str): Unique identifier for the receipt.
+            date (str): Date and time the receipt was generated (ISO 8601 format).
+            total_amount (float): Total amount for the receipt, must be positive.
+            payment_method (str): Payment method used for the transaction.
+            transaction_id (str): Identifier for the transaction associated with the receipt.
+    Transaction:
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+          title: Transaction Id
+          description: Unique transaction identifier (UUID format)
+        timestamp:
+          type: string
+          title: Timestamp
+          description: Timestamp of the transaction in ISO 8601 format
+        store_id:
+          type: string
+          title: Store Id
+          description: Store identifier, must be one of STORE_01 to STORE_10
+        cashier_id:
+          type: string
+          title: Cashier Id
+          description: Cashier identifier, must be one of CASHIER_1 to CASHIER_8
+        items:
+          items:
+            $ref: '#/components/schemas/Item'
+          type: array
+          title: Items
+          description: List of items in the transaction
+        total_amount:
+          type: number
+          title: Total Amount
+          description: Total amount of the transaction, must be positive
+        payment_method:
+          type: string
+          title: Payment Method
+          description: 'Payment method used, one of: credit_card, cash, debit_card, voucher'
+        payment_status:
+          type: string
+          title: Payment Status
+          description: 'Payment status of the transaction, one of: success, failed'
+        customer_id:
+          type: string
+          title: Customer Id
+          description: Customer identifier for the transaction
+        loyalty_points_earned:
+          type: integer
+          title: Loyalty Points Earned
+          description: Number of loyalty points earned, must be non-negative
+        receipt:
+          $ref: '#/components/schemas/Receipt'
+          description: Receipt information associated with the transaction
+      type: object
+      required:
+        - transaction_id
+        - timestamp
+        - store_id
+        - cashier_id
+        - items
+        - total_amount
+        - payment_method
+        - payment_status
+        - customer_id
+        - loyalty_points_earned
+        - receipt
+      title: Transaction
+      description: |-
+        Represents a point-of-sale (POS) transaction.
+
+        Attributes:
+            transaction_id (UUID): Unique identifier for the transaction.
+            timestamp (str): Timestamp of the transaction (ISO 8601 format).
+            store_id (str): Identifier of the store (STORE_01 to STORE_10).
+            cashier_id (str): Identifier of the cashier (CASHIER_1 to CASHIER_8).
+            items (List[Item]): List of items in the transaction.
+            total_amount (float): Total amount of the transaction, must be positive.
+            payment_method (str): Payment method used (e.g., credit_card, cash).
+            payment_status (str): Status of the payment (success or failed).
+            customer_id (str): Identifier of the customer.
+            loyalty_points_earned (int): Loyalty points earned, must be non-negative.
+            receipt (Receipt): Receipt details associated with the transaction.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBasic:
+      type: http
+      scheme: basic

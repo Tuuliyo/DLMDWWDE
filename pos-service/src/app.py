@@ -1,86 +1,132 @@
 import json
 import requests
-from utils import generate_transaction
 import time
+from utils import generate_transaction
+from prometheus_client import start_http_server, Counter, Histogram
 from opentelemetry import trace
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from logger_config import setup_logger
+import os
 
-# Initialize OpenTelemetry tracing
+# Initialize logger
+logger = setup_logger()
+
+# Prometheus Metrics
+REQUEST_COUNT = Counter("request_count", "Number of requests sent", ["status"])
+REQUEST_LATENCY = Histogram("request_latency_seconds", "Latency of requests in seconds")
+
+
 def init_tracing():
-    resource = Resource.create(attributes={
-        "service.name": "pos-service"  # Replace with the name of your service
-    })
+    """
+    Initializes OpenTelemetry tracing with an OTLP exporter.
+
+    - Sets up a tracer provider with resource attributes.
+    - Configures the OTLP exporter for sending traces to a collector.
+    - Instruments the `requests` library for automatic tracing.
+
+    Raises:
+        Exception: If tracing initialization fails.
+    """
+    resource = Resource.create(attributes={"service.name": "pos-service"})
+
     # Set up the tracer provider
     trace.set_tracer_provider(TracerProvider(resource=resource))
 
-    # Configure the OTLP exporter to send traces to the OpenTelemetry Collector
-    otlp_exporter = OTLPSpanExporter(endpoint="http://otel-collector:4317", insecure=True)
-    span_processor = SimpleSpanProcessor(otlp_exporter)
+    # Configure the OTLP exporter
+    otlp_exporter = OTLPSpanExporter(
+        endpoint=f"{os.getenv('OTEL_COLLECTOR_PROTOCOL')}://{os.getenv('OTEL_COLLECTOR_HOST')}:{os.getenv('OTEL_COLLECTOR_PORT')}", insecure=True
+    )
+    span_processor = BatchSpanProcessor(
+        otlp_exporter,
+        max_queue_size=1000,
+        max_export_batch_size=500,
+        schedule_delay_millis=5000,
+    )
     trace.get_tracer_provider().add_span_processor(span_processor)
 
-    # Automatically instrument requests library
+    # Instrument the `requests` library
     RequestsInstrumentor().instrument()
 
-# Main function to send 1,000,000 messages
+
 def send_1_million_messages():
+    """
+    Simulates sending POS transactions to a validation service.
+
+    - Generates POS transactions.
+    - Sends each transaction to the validation service via HTTP POST.
+    - Tracks performance and request metrics using Prometheus.
+    - Uses OpenTelemetry for distributed tracing.
+
+    Returns:
+        None
+    """
     count = 0
-    tracer = trace.get_tracer(__name__)  # Get the tracer for this module
+    tracer = trace.get_tracer(__name__)
 
     try:
-        while count < 50000:
-            # Generate a random POS transaction
+        while count < 200000: # 1 million transactions in total (5 replicas)
+            # Generate a transaction
             transaction = generate_transaction()
-
-            # Convert transaction to JSON format
             transaction_json = json.dumps(transaction)
-            print(f"Sending transaction: {transaction_json}")
+            logger.info(f"Sending transaction: {transaction_json}")
 
-            # Start a new span for each transaction
+            # Create a tracing span for the transaction
             with tracer.start_as_current_span("send_transaction") as span:
-                # Add transaction details as span attributes
                 span.set_attribute("transaction.id", transaction["transaction_id"])
                 span.set_attribute("transaction.store_id", transaction["store_id"])
                 span.set_attribute("transaction.total_amount", transaction["total_amount"])
 
+                start_time = time.time()
                 try:
-                    # Send the request
+                    # Send transaction via HTTP POST
                     response = requests.post(
-                        "http://traefik/validation-service/api/v1/pos/validate_transaction",
+                        f"{os.getenv('API_PROTOCOL')}://{os.getenv('API_HOST')}:{os.getenv('API_PORT')}/validation-service/api/v1/pos/validate_transaction",
                         headers={"Content-Type": "application/json"},
                         data=transaction_json,
+                        auth=(os.getenv("API_USERNAME"), os.getenv("API_PASSWORD")),
                     )
-
-                    # Check if the request was successful
-                    response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
-                    print(f"Transaction sent successfully: {transaction['transaction_id']}")
+                    response.raise_for_status()
+                    logger.info(
+                        f"Transaction sent successfully: {transaction['transaction_id']}"
+                    )
                     span.set_status("OK")
+                    REQUEST_COUNT.labels(status="success").inc()
                 except requests.HTTPError as e:
-                    # If a 4xx or 5xx error occurs, handle it and log the error
-                    print(f"Failed to send transaction {transaction['transaction_id']}: {e}")
+                    logger.error(f"HTTP error: {e}")
                     span.record_exception(e)
                     span.set_status("ERROR")
+                    REQUEST_COUNT.labels(status="http_error").inc()
                 except requests.RequestException as e:
-                    # Catch other exceptions (e.g., network-related)
-                    print(f"Error during request: {e}")
+                    logger.error(f"Request error: {e}")
                     span.record_exception(e)
                     span.set_status("ERROR")
+                    REQUEST_COUNT.labels(status="request_error").inc()
+                finally:
+                    latency = time.time() - start_time
+                    REQUEST_LATENCY.observe(latency)
 
-            # Increment counter
             count += 1
             if count % 1000 == 0:
-                print(f"Sent {count} messages")
+                logger.info(f"Sent {count} messages")
 
     except KeyboardInterrupt:
-        print("Message streaming stopped.")
+        logger.warning("Message streaming interrupted.")
     finally:
-        print(f"Finished sending {count} messages")
+        logger.info(f"Finished sending {count} messages")
 
 
 if __name__ == "__main__":
+    """
+    Main entry point for the POS service simulation script.
+
+    - Starts Prometheus metrics server on port 8000.
+    - Initializes tracing.
+    - Sends simulated transactions to the validation service.
+    """
+    start_http_server(8000)
     init_tracing()
     send_1_million_messages()

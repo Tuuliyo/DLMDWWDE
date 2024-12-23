@@ -1,4 +1,5 @@
 server:
+  http_listen_address: 0.0.0.0
   http_listen_port: 3200
 
 distributor:
@@ -6,7 +7,9 @@ distributor:
     otlp:
       protocols:
         grpc:
+          endpoint: 0.0.0.0:4317
         http:
+          endpoint: 0.0.0.0:4318
 
 ingester:
   lifecycler:

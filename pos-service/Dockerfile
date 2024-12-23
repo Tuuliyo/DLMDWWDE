@@ -1,23 +1,33 @@
-# Step 1: Use a base Python image
+# ------------------------------------------------------------------------------
+# Dockerfile for creating a Python-based container for running a Python application.
+# This image includes:
+# - Python 3.11 slim as the base image.
+# - Installation of Python dependencies.
+# - Additional utilities like curl.
+# - A clean, lightweight setup for production.
+# ------------------------------------------------------------------------------
+
+# Use the official slim Python 3.11 image as the base image
 FROM python:3.11-slim
 
-# Schritt 2: Setze das Arbeitsverzeichnis im Container
+# Set the working directory inside the container to /app
 WORKDIR /app
 
-# Schritt 3: Kopiere die requirements.txt und installiere Abhängigkeiten
+# Copy the requirements.txt file from the host to the container
 COPY requirements.txt /app/
 
-# Installiere die in requirements.txt angegebenen Pakete
+# Install the Python dependencies specified in requirements.txt
+# The --no-cache-dir option ensures a smaller image size by avoiding unnecessary files.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install curl
-RUN apt-get update && apt-get install -y curl
+# Update the package list and install curl
+# Use --no-install-recommends to avoid installing unnecessary packages
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Schritt 4: Kopiere den restlichen Code in den Container
+# Copy the application source code into the container
 COPY src/ /app/src/
 
-# Schritt 5: Exponiere den Port, falls erforderlich (z.B. für API-Endpunkte)
-# EXPOSE 8000  # Falls du eine Web-App hast, die auf einem Port läuft
-
-# Schritt 6: Befehl zum Ausführen des Python-Skripts
+# Define the default command to run the Python application
 CMD ["python", "src/app.py"]

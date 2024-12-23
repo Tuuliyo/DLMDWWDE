@@ -1,0 +1,33 @@
+global:
+  scrape_interval: "5s"
+
+scrape_configs:
+  - job_name: 'validation-service'
+    static_configs:
+      - targets: ['traefik:80']
+    metrics_path: /validation-service/metrics
+  - job_name: pos-service
+    static_configs:
+      - targets: ['pos-service:8000']
+  - job_name: 'aggregation-service'
+    static_configs:
+      - targets: ['aggregation-pipeline:8000']
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+    metrics_path: /metrics
+  - job_name: 'solace-std'
+    scrape_interval: 15s
+    metrics_path: /solace-std
+    static_configs:
+      - targets: ['solace-prometheus-exporter:9628']
+  - job_name: 'solace-det'
+    scrape_interval: 15s
+    metrics_path: /solace-det
+    static_configs:
+      - targets: ['solace-prometheus-exporter:9628']
+  - job_name: 'solace-metrics'
+    scrape_interval: 15s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['solace-prometheus-exporter:9628']

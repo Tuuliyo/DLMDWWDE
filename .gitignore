@@ -1,0 +1,84 @@
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignore Tempo files
+monitoring-service/tempo/tempo-*
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore virtual environment directories
+.venv*
+.venv/*
+venv/
+
+# Local Terraform directories
+.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
+
+# vault data
+/vault-setup/data/*
+
+# Override files (used for local modifications)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+
+# Terraform lock files
+.terraform.lock.hcl
+
+# Configuration files used by Terraform providers
+.terraformrc
+terraform.rc
+
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+*.tmp
+*.swp
+
+# Ignore data files
+*.csv
+*.json
+*.xml
+
+# Ignore output files
+*.out
+*.pdf
+
+# Ignore configuration files
+*.ini
+*.cfg
+
+# Ignore compiled files
+*.o
+*.so
+*.a
+*.dylib
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+*.iml
