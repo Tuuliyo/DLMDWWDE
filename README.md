@@ -2,7 +2,7 @@
 # DLMDWWDE - Data Engineering Project: POS Real-Time Integration
 
 **University Project for Data Engineering**  
-This project implements a real-time, data-intensive backend for Point-of-Sale (POS) transactions using a Microservice Architecture. The system is built to be reliable, scalable, maintainable, and secure while addressing data protection and governance. The project showcases modern data engineering principles, integrating message brokering, monitoring, secrets management, and real-time data processing.
+This project implements a real-time, data-intensive backend for point-of-sale (POS) transactions using a microservice architecture. The system is designed to be reliable, scalable, maintainable and secure, while addressing data privacy and governance. The project demonstrates modern data engineering principles by integrating message brokering, monitoring, secrets management and real-time data processing.
 
 ---
 
@@ -56,25 +56,24 @@ This project implements a real-time, data-intensive backend for Point-of-Sale (P
 
 ## Overview
 
-This project demonstrates a real-time integration platform for POS data, designed to simulate a production-grade data engineering workflow. It supports:
+This project offers a real-time integration platform for POS data, which has been designed to simulate a production-grade data engineering workflow. The platform offers the following features:
+-	Real-time POS transaction streaming
+-	Transaction validation
+-	Data aggregation for analytics
+-	Monitoring, tracing, and logging
+-	Secure secrets management via Vault
 
-- Real-time POS transaction streaming
-- Transaction validation
-- Data aggregation for analytics
-- Monitoring, tracing, and logging
-- Secure secrets management via Vault
-
-The infrastructure is fully containerized with **Docker Compose**, enabling rapid local deployment and reproducibility.
+The infrastructure is fully containerised with **Docker Compose**, enabling rapid local deployment and reproducibility.
 
 ---
 
 ## Project Goals
 
-- **Reliability**: Ensure fault-tolerant communication between services.
-- **Scalability**: Design the system to handle increasing transaction volumes.
-- **Maintainability**: Use modular and reusable Microservice Architecture.
-- **Real-Time**: Use modern tools and architecture to define a real-time backend for pos transactions.
-- **Data Security**: Safeguard sensitive information using Vault.
+- **Reliability**: Ensuring fault-tolerant communication between services is paramount.
+- **Scalability**: The system must be designed to accommodate increasing transaction volumes.
+- **Maintainability**: Utilising modular and reusable Microservice Architecture is essential.
+- **Real-Time**: Modern tools and architecture must be employed to define a real-time backend for POS transactions.
+- **Data Security**: Vault must be employed to safeguard sensitive information.
 - **Data Governance**: Ensure compliance with data handling and storage regulations.
 - **Observability**: Provide detailed insights into system health and performance.
 
@@ -90,11 +89,10 @@ The infrastructure is fully containerized with **Docker Compose**, enabling rapi
 
 ### Sequence Diagram
 
-The following sequence diagram illustrates the fundamental communication between the services. Monitoring and load balancing components are intentionally excluded to emphasize the raw message exchange.
-
+The sequence diagram below illustrates the fundamental communication between the services. The monitoring and load balancing components have been intentionally excluded in order to emphasise the raw message exchange.
 There are two distinct communication flows in this process:
 1. In the first flow, the POS Service acts as the publisher, while the Aggregation Service subscribes to transaction events.
-2. In the second flow, the Aggregation Service becomes the publisher, with the Reporting Service (out of scope for this diagram) acting as the subscriber.
+2. In the second flow, the Aggregation Service becomes the publisher, with the Reporting Service (not included in this diagram) acting as the subscriber.
 
 This interaction encompasses two key events within the message exchange.
 
@@ -123,11 +121,9 @@ sequenceDiagram
 ---
 
 ### Vault Structure
-
-The system uses Vault to manage configurations and secrets.
-This directory structure is designed to enhance data governance, security, and isolation by organizing sensitive configurations and credentials in a clear and logical way. It enables:
-- **Data Security**: Sensitive information (e.g., credentials) is isolated in dedicated directories, reducing the risk of unauthorized access or accidental exposure.
-- **Access Control**: Segregating service configurations supports fine-grained permissions, ensuring only authorized systems or users can access specific data.
+The system employs Vault to oversee configurations and secrets. The directory structure has been meticulously crafted to bolster data governance, security, and isolation by methodically arranging sensitive configurations and credentials in a lucid and coherent manner. The following benefits are thereby realised:
+- **Data Security**: Sensitive information (e.g., credentials) is sequestered within dedicated directories, thereby mitigating the risk of unauthorised access or inadvertent disclosure.
+- **Access Control**: Segregating service configurations supports fine-grained permissions, ensuring only authorised systems or users can access specific data.
 
 ```mermaid
 flowchart TD
