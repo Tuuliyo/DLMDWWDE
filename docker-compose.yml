@@ -5,8 +5,6 @@
 # and secrets management, along with dependencies and network configurations.
 # ------------------------------------------------------------------------------
 
-version: "3.8"
-
 services:
   # Message broker service using Solace PubSub+
   message-broker:
@@ -119,7 +117,7 @@ services:
 
   # Traefik load balancer service
   traefik:
-    image: traefik:v2.5
+    image: traefik:v3.2.3
     container_name: traefik-lb
     depends_on:
       terraform:

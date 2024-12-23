@@ -10,6 +10,8 @@ MAX_ATTEMPTS=5              # Maximum number of attempts to load environment var
 ATTEMPT=1                   # Current attempt counter
 SLEEP_TIME=5                # Wait time (in seconds) between attempts
 
+sleep 10 # Wait for Vault to be ready - buffer for startup time
+
 while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
     if [ -f "/vault-secrets/.env" ]; then
         echo "Found /vault-secrets/.env. Checking for valid entries..."
@@ -35,8 +37,6 @@ while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
     ATTEMPT=$((ATTEMPT + 1))
     sleep $SLEEP_TIME
 done
-
-sleep 10 
 
 # Environment variables setup
 BROKER_PROTOCOL="${BROKER_HTTP_PROTOCOL}"

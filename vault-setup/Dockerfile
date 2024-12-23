@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 
 # Base image
-FROM hashicorp/vault:latest
+FROM hashicorp/vault:1.18.3
 
 # Install additional dependencies: curl and jq
 RUN apk add --no-cache curl jq
