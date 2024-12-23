@@ -11,3 +11,7 @@ POS_SERVICE_PASSWORD="{{ with secret "kv/validation-service/creds/pos-service" }
 
 AGGREGATION_SERVICE_USERNAME="{{ with secret "kv/validation-service/creds/aggregation-service" }}{{ .Data.username }}{{ end }}"
 AGGREGATION_SERVICE_PASSWORD="{{ with secret "kv/validation-service/creds/aggregation-service" }}{{ .Data.password }}{{ end }}"
+
+OTEL_COLLECTOR_HOST="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_host }}{{ end }}"
+OTEL_COLLECTOR_PORT="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_port }}{{ end }}"
+OTEL_COLLECTOR_PROTOCOL="{{ with secret "kv/otel-collector/config" }}{{ .Data.otel_protocol }}{{ end }}"
