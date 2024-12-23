@@ -434,7 +434,7 @@ Data Security measures include encryption, access control, and secrets managemen
    ```bash
    docker compose up --build -d
    ```
-or depending on which docker version you have installed:
+or depending on which docker cli version you have installed:
 
    ```bash
    docker-compose up --build -d

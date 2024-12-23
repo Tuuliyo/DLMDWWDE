@@ -52,11 +52,11 @@ services:
     container_name: terraform
     volumes:
       - ./broker-setup/solace:/workspace
-      - ./broker-setup/scripts/setup.sh:/workspace/setup/setup.sh
+      - ./broker-setup/scripts/setup.sh:/setup/setup.sh
       - ./vault-setup/services/message-broker/env/.env:/vault-secrets/.env:ro
     working_dir: /workspace
     entrypoint:
-      ["sh", "-c", "source /vault-secrets/.env && sh /workspace/setup/setup.sh"]
+      ["sh", "-c", "source /vault-secrets/.env && sh /setup/setup.sh"]
     environment:
       - ENV_FILE_PATH=/vault-secrets/.env
     depends_on:
@@ -206,7 +206,7 @@ services:
 
   # Prometheus service for monitoring
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:main
     container_name: prometheus
     depends_on:
       - otel-collector
