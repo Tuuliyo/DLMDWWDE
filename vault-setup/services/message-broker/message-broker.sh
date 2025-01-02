@@ -38,6 +38,7 @@ LOGIN_USERNAME="admin"
 LOGIN_PASSWORD="admin"
 OTEL_USERNAME="telemetry_collector_service"
 OTEL_PASSWORD=$(generate_password)
+OTEL_QUEUE_NAME="otel"
 VALIDATION_SERVICE_USERNAME="sale_pos_transaction_validation"
 VALIDATION_SERVICE_PASSWORD=$(generate_password)
 AGGREGATION_SERVICE_USERNAME="sale_pos_transaction_aggregation"
@@ -80,6 +81,10 @@ echo "Populating data at $SECRETS_BASE_PATH/creds/otel..."
 vault kv put $SECRETS_BASE_PATH/creds/otel \
     username="$OTEL_USERNAME" \
     password="$OTEL_PASSWORD"
+
+echo "Populating data at $SECRETS_BASE_PATH/config/otel..."
+vault kv put $SECRETS_BASE_PATH/config/otel \
+    queue_name="$OTEL_QUEUE_NAME"
 
 echo "Populating data at $SECRETS_BASE_PATH/creds/validation-service..."
 vault kv put $SECRETS_BASE_PATH/creds/validation-service \

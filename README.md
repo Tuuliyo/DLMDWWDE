@@ -113,6 +113,7 @@ sequenceDiagram
     Validation->>Validation: Check transaction
     Validation->>Broker: Publish to Solace topic
     Broker->>Aggregation: Consume transaction events
+    Aggregation->>Aggregation: Windowing and aggregations
     Aggregation->>Vault: Fetch configuration
     Aggregation->>Validation: Publish aggregated event
     Validation->>Vault: Fetch credentials
@@ -156,7 +157,9 @@ flowchart TD
     mb_config --> msg_vpn["msg_vpn"]
     mb_config --> pos_topic_prefix["pos_topic_prefix"]
     mb_config --> agg_queue["aggregation-service/"]
-    agg_queue --> queue_name["queue_name"]
+    agg_queue --> agg_queue_name["queue_name"]
+    mb_config --> otel_queue["otel/"] 
+    otel_queue --> otel_queue_name["queue_name"]
 
     mb_creds --> login["login/"]
     login --> login_user["username"]
@@ -164,12 +167,15 @@ flowchart TD
     
     mb_creds --> otel["otel/"]
     otel --> otel_user["username"]
-
+    otel --> otel_user["password"]
+    
     kv --> otel_collector["otel-collector/"]
     otel_collector --> otel_config["config/"]
     otel_config --> otel_protocol["otel_protocol"]
     otel_config --> otel_host["otel_host"]
     otel_config --> otel_port["otel_port"]
+    otel_config --> otel_host["tempo_host"]
+    otel_config --> otel_port["tempo_port"]
 ```
 
 ---
