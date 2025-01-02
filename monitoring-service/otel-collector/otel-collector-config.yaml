@@ -6,7 +6,7 @@ receivers:
       sasl_plain:
         username: ${env:BROKER_OTEL_USERNAME}
         password: ${env:BROKER_OTEL_PASSWORD}
-    queue: queue://#telemetry-otel
+    queue: queue://#telemetry-${env:BROKER_OTEL_QUEUE_NAME}
     tls:
       insecure: true
       insecure_skip_verify: true
@@ -26,7 +26,7 @@ exporters:
   debug:
     verbosity:
   otlp:
-    endpoint: tempo:4317
+    endpoint: ${env:TEMPO_HOST}:${env:TEMPO_PORT}
     tls:
       insecure: true
       insecure_skip_verify: true

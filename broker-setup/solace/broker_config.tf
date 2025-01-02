@@ -16,6 +16,10 @@ data "vault_generic_secret" "message_broker_otel_creds" {
     path = "kv/message-broker/creds/otel"
 }
 
+data "vault_generic_secret" "message_broker_otel_config" {
+    path = "kv/message-broker/config/otel"
+}
+
 data "vault_generic_secret" "message_broker_validation_service_creds" {
     path = "kv/message-broker/creds/validation-service"
 }

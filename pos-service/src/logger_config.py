@@ -3,14 +3,14 @@ import logging
 
 def setup_logger():
     """
-    Sets up a logger for the POS service with both file and console handlers.
+    Configures and returns a logger for the pos service.
 
-    - Ensures a `/app/logs` directory exists for storing log files.
-    - Logs messages to both a file and the console.
-    - Uses the ERROR logging level by default for minimal output in production.
+    - Ensures a directory for log files exists at `/app/logs`.
+    - Logs messages to both a file (`api_logs.log`) and the console.
+    - Uses the ERROR logging level for minimal output in production.
 
     Returns:
-        logging.Logger: Configured logger instance.
+        logging.Logger: A configured logger instance.
     """
     logger = logging.getLogger("pos-service")
     logger.setLevel(logging.ERROR)

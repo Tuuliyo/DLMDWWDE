@@ -8,7 +8,7 @@
 
 resource "solacebroker_msg_vpn_telemetry_profile" "otel" {
     msg_vpn_name = data.vault_generic_secret.message_broker_config.data["msg_vpn"]
-    telemetry_profile_name = "otel"
+    telemetry_profile_name = data.vault_generic_secret.message_broker_otel_config.data["queue_name"]
     receiver_enabled = true
     trace_enabled = true
     trace_send_span_generation_enabled = true

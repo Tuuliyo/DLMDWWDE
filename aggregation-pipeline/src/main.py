@@ -46,7 +46,7 @@ tracer = trace.get_tracer(__name__)
 
 # Instrument HTTP requests for tracing
 RequestsInstrumentor().instrument()
-start_http_server(8000)
+start_http_server(8000) # Start Prometheus metrics server
 
 # Define the dataflow
 flow = Dataflow("aggregation-pipeline")
